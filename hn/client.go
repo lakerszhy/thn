@@ -51,7 +51,6 @@ func (c *Client) FetchItems(ctx context.Context, cat domain.Category, p domain.P
 	if !exisit {
 		var err error
 		ids, err = c.fetchIDs(ctx, categoryFromDomain(cat))
-		fmt.Println("获取IDs")
 		if err != nil {
 			return nil, err
 		}

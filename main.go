@@ -4,34 +4,26 @@ import (
 	"context"
 	"log"
 
-	"github.com/lakerszhy/thn/domain"
+	tea "charm.land/bubbletea/v2"
 	"github.com/lakerszhy/thn/hn"
+	"github.com/lakerszhy/thn/ui"
 )
 
 func main() {
+	if err := run(); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func run() error {
 	client, err := hn.New(context.Background())
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
-	p := domain.NewPagination(20)
-
-	items, err := client.FetchItems(context.Background(), domain.CategoryTop, p)
-	if err != nil {
-		log.Fatal(err)
+	app := ui.NewApp(client)
+	if _, err := tea.NewProgram(app).Run(); err != nil {
+		return err
 	}
-
-	for _, item := range items {
-		log.Println(item.Title)
-	}
-
-	p = p.Next()
-	items, err = client.FetchItems(context.Background(), domain.CategoryTop, p)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	for _, item := range items {
-		log.Println(item.Title)
-	}
+	return nil
 }

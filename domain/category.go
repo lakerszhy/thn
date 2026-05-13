@@ -1,12 +1,12 @@
 package domain
 
-const (
-	CategoryTop Category = iota
-	CategoryNew
-	CategoryBest
-	CategoryAsk
-	CategoryShow
-	CategoryJob
+var (
+	CategoryTop  Category = "Top"
+	CategoryNew  Category = "New"
+	CategoryBest Category = "Best"
+	CategoryAsk  Category = "Ask"
+	CategoryShow Category = "Show"
+	CategoryJob  Category = "Job"
 )
 
-type Category int
+type Category string

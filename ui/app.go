@@ -133,19 +133,20 @@ func (a *app) View() tea.View {
 }
 
 func (a app) renderCategories() string {
-	style := lipgloss.NewStyle().Padding(0, 1)
+	style := lipgloss.NewStyle().Padding(0, 1).Background(a.theme.categoryBackgroundColor)
 
 	categories := make([]string, len(a.categories))
 	for _, c := range a.categories {
 		if c == a.current {
-			style = style.Background(lipgloss.Red)
+			style = style.Foreground(a.theme.categoryActiveColor).Bold(true)
 		} else {
-			style = style.UnsetBackground()
+			style = style.Foreground(a.theme.categoryColor)
 		}
 		categories = append(categories, style.Render(string(c)))
 	}
 
 	return lipgloss.NewStyle().Border(a.theme.border, false, false, true, false).
+		Background(a.theme.categoryBackgroundColor).
 		Width(a.style.GetWidth() - a.style.GetHorizontalFrameSize()).
 		Render(lipgloss.JoinHorizontal(lipgloss.Top, categories...))
 }

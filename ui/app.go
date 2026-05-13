@@ -16,17 +16,17 @@ type app struct {
 	commentsView *commentsView
 	client       *hn.Client
 
-	theme  Theme
-	style  lipgloss.Style
-	width  int
-	height int
+	theme          Theme
+	itemsViewStyle lipgloss.Style
+	windowWidth    int
+	windowHeight   int
 }
 
 func NewApp(client *hn.Client, theme Theme) *app {
 	return &app{
 		client: client,
 		theme:  theme,
-		style: lipgloss.NewStyle().Border(theme.border.style).
+		itemsViewStyle: lipgloss.NewStyle().Border(theme.border.style).
 			BorderForeground(theme.border.color),
 		categories: []domain.Category{
 			domain.CategoryTop,
@@ -52,12 +52,13 @@ func (a *app) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case itemSelectedMsg:
+		a.commentsView = newCommentsView(domain.Item(msg), a.client, a.theme)
 		a.updateSize()
-		a.commentsView = newCommentsView(domain.Item(msg), a.client)
 		return a, a.commentsView.Init()
 	case tea.WindowSizeMsg:
-		a.width = msg.Width
-		a.height = msg.Height
+		a.windowWidth = msg.Width
+		a.windowHeight = msg.Height
+		a.itemsViewStyle = a.itemsViewStyle.Height(a.windowHeight).Width(a.windowWidth)
 		a.updateSize()
 		return a, nil
 	case tea.KeyPressMsg:
@@ -109,7 +110,7 @@ func (a *app) View() tea.View {
 		a.renderCategories(),
 		a.views[a.current].View(),
 	)
-	content = a.style.Render(content)
+	content = a.itemsViewStyle.Render(content)
 
 	if a.commentsView != nil {
 		content = lipgloss.JoinHorizontal(
@@ -136,16 +137,19 @@ func (a *app) updateCurrentCategory(index int) tea.Cmd {
 }
 
 func (a *app) updateSize() {
-	a.style = a.style.Height(a.height).Width(a.width)
+	// 2 for category bar
+	contentHeight := a.windowHeight - a.itemsViewStyle.GetVerticalBorderSize() - 2
+	contentWidth := a.windowWidth
+
 	if a.commentsView != nil {
-		a.style = a.style.Width(a.width / 2)
+		contentWidth /= 2
+		a.commentsView.setSize(a.windowWidth-contentWidth, contentHeight)
 	}
 
-	w := a.width - a.style.GetHorizontalFrameSize()
-	// 2 for category bar
-	h := a.height - a.style.GetVerticalBorderSize() - 2
+	a.itemsViewStyle = a.itemsViewStyle.Width(contentWidth)
+
 	for _, v := range a.views {
-		v.setSize(w, h)
+		v.setSize(contentWidth-a.itemsViewStyle.GetHorizontalFrameSize(), contentHeight)
 	}
 }
 
@@ -163,6 +167,6 @@ func (a app) renderCategories() string {
 	}
 
 	return lipgloss.NewStyle().Border(a.theme.border.style, false, false, true, false).
-		Width(a.style.GetWidth() - a.style.GetHorizontalFrameSize()).
+		Width(a.itemsViewStyle.GetWidth() - a.itemsViewStyle.GetHorizontalFrameSize()).
 		Render(lipgloss.JoinHorizontal(lipgloss.Top, categories...))
 }

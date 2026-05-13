@@ -21,7 +21,6 @@ type itemsView struct {
 	category   domain.Category
 	pagination domain.Pagination
 	client     *hn.Client
-	items      []domain.Item
 
 	model  list.Model
 	width  int
@@ -63,8 +62,6 @@ func (t *itemsView) Update(msg tea.Msg) (*itemsView, tea.Cmd) {
 	switch msg := msg.(type) {
 	case itemsMsg:
 		if msg.category == t.category {
-			t.items = msg.items
-
 			items := make([]list.Item, len(msg.items))
 			for i, v := range msg.items {
 				items[i] = listItem{item: v}
@@ -75,9 +72,14 @@ func (t *itemsView) Update(msg tea.Msg) (*itemsView, tea.Cmd) {
 	case tea.KeyPressMsg:
 		switch msg.String() {
 		case "enter":
-			if len(t.items) > 0 {
+			index := t.model.Index()
+			if index < 0 || index >= len(t.model.Items()) {
+				return t, nil
+			}
+
+			if item, ok := t.model.Items()[index].(listItem); ok {
 				return t, func() tea.Msg {
-					return itemSelectedMsg(t.items[0])
+					return itemSelectedMsg(item.item)
 				}
 			}
 		}
@@ -109,10 +111,11 @@ type itemDeletage struct {
 }
 
 func newItemDeletage(t Theme) *itemDeletage {
-	// 6: 1 for "> ", 3 for index, 1 for ".", 1 for space
+	// 6: 1 for ">", 3 for index, 1 for ".", 1 for space
 	desc := lipgloss.NewStyle().Padding(0, 0, 0, 6)
 	return &itemDeletage{
-		normalTitle:   lipgloss.NewStyle().Foreground(t.itemTitleColor),
+		// 1 for ">"
+		normalTitle:   lipgloss.NewStyle().Padding(0, 0, 0, 1).Foreground(t.itemTitleColor),
 		normalDesc:    desc.Foreground(t.itemDescColor).Faint(true),
 		selectedTitle: lipgloss.NewStyle().Foreground(t.itemTitleSelectedColor),
 		selectedDesc:  desc.Foreground(t.itemDescSelectedColor).Faint(true),
@@ -150,7 +153,7 @@ func (d itemDeletage) Render(w io.Writer, m list.Model, index int, item list.Ite
 		title = d.selectedTitle.Render(">" + title)
 		desc = d.selectedDesc.Render(desc)
 	} else {
-		title = d.normalTitle.Render(" " + title)
+		title = d.normalTitle.Render(title)
 		desc = d.normalDesc.Render(desc)
 	}
 

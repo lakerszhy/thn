@@ -20,6 +20,9 @@ var DefaultTheme = Theme{
 	itemTitleSelectedColor: lipgloss.Color("#c6e472"),
 	itemDescColor:          lipgloss.Color("#fcfcfc"),
 	itemDescSelectedColor:  lipgloss.Color("#c6e472"),
+
+	commentDescColor:    lipgloss.Color("#fcfcfc"),
+	commentContentColor: lipgloss.Color("#fcfcfc"),
 }
 
 type Theme struct {
@@ -32,6 +35,9 @@ type Theme struct {
 	itemTitleSelectedColor color.Color
 	itemDescColor          color.Color
 	itemDescSelectedColor  color.Color
+
+	commentDescColor    color.Color
+	commentContentColor color.Color
 }
 
 type border struct {

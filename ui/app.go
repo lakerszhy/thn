@@ -10,11 +10,13 @@ import (
 )
 
 type app struct {
-	categories   []domain.Category
-	current      domain.Category
-	views        map[domain.Category]*itemsView
-	commentsView *commentsView
-	client       *hn.Client
+	categories       []domain.Category
+	current          domain.Category
+	views            map[domain.Category]*itemsView
+	commentsView     *commentsView
+	focusOnItemsView bool
+
+	client *hn.Client
 
 	theme          Theme
 	itemsViewStyle lipgloss.Style
@@ -24,10 +26,9 @@ type app struct {
 
 func NewApp(client *hn.Client, theme Theme) *app {
 	return &app{
-		client: client,
-		theme:  theme,
-		itemsViewStyle: lipgloss.NewStyle().Border(theme.border.style).
-			BorderForeground(theme.border.color),
+		client:         client,
+		theme:          theme,
+		itemsViewStyle: lipgloss.NewStyle().Border(theme.border.style),
 		categories: []domain.Category{
 			domain.CategoryTop,
 			domain.CategoryNew,
@@ -36,7 +37,8 @@ func NewApp(client *hn.Client, theme Theme) *app {
 			domain.CategoryShow,
 			domain.CategoryJob,
 		},
-		current: domain.CategoryTop,
+		focusOnItemsView: true,
+		current:          domain.CategoryTop,
 		views: map[domain.Category]*itemsView{
 			domain.CategoryTop: newItemsView(domain.CategoryTop, client, theme),
 		},
@@ -52,6 +54,7 @@ func (a *app) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case itemSelectedMsg:
+		a.focusOnItemsView = false
 		a.commentsView = newCommentsView(domain.Item(msg), a.client, a.theme)
 		a.updateSize()
 		return a, a.commentsView.Init()
@@ -63,6 +66,11 @@ func (a *app) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return a, nil
 	case tea.KeyPressMsg:
 		switch msg.String() {
+		case "esc":
+			a.focusOnItemsView = true
+			a.commentsView = nil
+			a.updateSize()
+			return a, nil
 		case "right", "l", "tab":
 			index := slices.Index(a.categories, a.current)
 			index = min(index+1, len(a.categories)-1)
@@ -75,11 +83,17 @@ func (a *app) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return a, tea.Quit
 		}
 
-		for i := range a.views {
-			if i == a.current {
-				a.views[i], cmd = a.views[i].Update(msg)
-				return a, cmd
+		if a.focusOnItemsView {
+			for i := range a.views {
+				if i == a.current {
+					a.views[i], cmd = a.views[i].Update(msg)
+					return a, cmd
+				}
 			}
+			return a, nil
+		} else if a.commentsView != nil {
+			a.commentsView, cmd = a.commentsView.Update(msg)
+			return a, cmd
 		}
 
 		return a, nil
@@ -110,7 +124,12 @@ func (a *app) View() tea.View {
 		a.renderCategories(),
 		a.views[a.current].View(),
 	)
-	content = a.itemsViewStyle.Render(content)
+
+	style := a.itemsViewStyle.BorderForeground(a.theme.border.activeColor)
+	if !a.focusOnItemsView {
+		style = a.itemsViewStyle.BorderForeground(a.theme.border.color)
+	}
+	content = style.Render(content)
 
 	if a.commentsView != nil {
 		content = lipgloss.JoinHorizontal(
@@ -143,7 +162,7 @@ func (a *app) updateSize() {
 
 	if a.commentsView != nil {
 		contentWidth /= 2
-		a.commentsView.setSize(a.windowWidth-contentWidth, contentHeight)
+		a.commentsView.setSize(a.windowWidth-contentWidth, a.windowHeight)
 	}
 
 	a.itemsViewStyle = a.itemsViewStyle.Width(contentWidth)
@@ -154,19 +173,24 @@ func (a *app) updateSize() {
 }
 
 func (a app) renderCategories() string {
-	style := lipgloss.NewStyle().Padding(0, 1)
+	catStyle := lipgloss.NewStyle().Padding(0, 1)
 
 	categories := make([]string, len(a.categories))
 	for _, c := range a.categories {
 		if c == a.current {
-			style = style.Foreground(a.theme.categoryActiveColor).Bold(true)
+			catStyle = catStyle.Foreground(a.theme.categoryActiveColor).Bold(true)
 		} else {
-			style = style.Foreground(a.theme.categoryColor)
+			catStyle = catStyle.Foreground(a.theme.categoryColor)
 		}
-		categories = append(categories, style.Render(string(c)))
+		categories = append(categories, catStyle.Render(string(c)))
 	}
 
-	return lipgloss.NewStyle().Border(a.theme.border.style, false, false, true, false).
-		Width(a.itemsViewStyle.GetWidth() - a.itemsViewStyle.GetHorizontalFrameSize()).
-		Render(lipgloss.JoinHorizontal(lipgloss.Top, categories...))
+	style := lipgloss.NewStyle().BorderForeground(a.theme.border.color).
+		Border(a.theme.border.style, false, false, true, false).
+		Width(a.itemsViewStyle.GetWidth() - a.itemsViewStyle.GetHorizontalFrameSize())
+	if a.focusOnItemsView {
+		style = style.BorderForeground(a.theme.border.activeColor)
+	}
+
+	return style.Render(lipgloss.JoinHorizontal(lipgloss.Top, categories...))
 }

@@ -3,9 +3,11 @@ package ui
 import (
 	"context"
 	"fmt"
-	"strings"
+	"time"
 
+	"charm.land/bubbles/v2/list"
 	tea "charm.land/bubbletea/v2"
+	"github.com/dustin/go-humanize"
 	"github.com/lakerszhy/thn/domain"
 	"github.com/lakerszhy/thn/hn"
 )
@@ -16,14 +18,28 @@ type itemsView struct {
 	pagination domain.Pagination
 	client     *hn.Client
 	items      []domain.Item
+
+	model  list.Model
+	width  int
+	height int
 }
 
 func newItemsView(category domain.Category, client *hn.Client, theme Theme) *itemsView {
+	delegate := list.NewDefaultDelegate()
+	model := list.New(nil, delegate, 0, 0)
+	model.SetShowTitle(false)
+	model.SetFilteringEnabled(false)
+	model.SetShowStatusBar(false)
+	model.SetShowPagination(false)
+	model.SetShowHelp(false)
+	model.DisableQuitKeybindings()
+
 	return &itemsView{
 		category:   category,
 		client:     client,
 		pagination: domain.NewPagination(),
 		theme:      theme,
+		model:      model,
 	}
 }
 
@@ -45,6 +61,12 @@ func (t *itemsView) Update(msg tea.Msg) (*itemsView, tea.Cmd) {
 	case itemsMsg:
 		if msg.category == t.category {
 			t.items = msg.items
+
+			items := make([]list.Item, len(msg.items))
+			for i, v := range msg.items {
+				items[i] = listItem{item: v}
+			}
+			t.model.SetItems(items)
 		}
 		return t, nil
 	case tea.KeyPressMsg:
@@ -58,15 +80,41 @@ func (t *itemsView) Update(msg tea.Msg) (*itemsView, tea.Cmd) {
 		}
 	}
 
-	return t, nil
+	var cmd tea.Cmd
+	t.model, cmd = t.model.Update(msg)
+	return t, cmd
 }
 
 func (t *itemsView) View() string {
-	var s strings.Builder
+	return t.model.View()
+}
 
-	for i, v := range t.items {
-		fmt.Fprintf(&s, "%d. %s\n", i+1, v.Title)
+func (t *itemsView) setSize(width int, height int) {
+	t.model.SetWidth(width)
+	t.model.SetHeight(height)
+}
+
+type listItem struct {
+	item domain.Item
+}
+
+func (l listItem) FilterValue() string {
+	return l.item.Title
+}
+
+func (l listItem) Title() string {
+	return l.item.Title
+}
+
+func (l listItem) Description() string {
+	v := fmt.Sprintf("%d points by %s %s",
+		l.item.Score, l.item.By, humanize.Time(time.Unix(l.item.Time, 0)))
+
+	if l.item.Descendants == 1 {
+		v = fmt.Sprintf("%s | 1 comment", v)
+	} else if l.item.Descendants > 1 {
+		v = fmt.Sprintf("%s | %d comments", v, l.item.Descendants)
 	}
 
-	return s.String()
+	return v
 }

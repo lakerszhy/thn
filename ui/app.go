@@ -51,13 +51,13 @@ func (a *app) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case itemSelectedMsg:
-		a.style = a.style.Width(a.width / 2)
+		a.updateSize()
 		a.commentsView = newCommentsView(domain.Item(msg), a.client)
 		return a, a.commentsView.Init()
 	case tea.WindowSizeMsg:
 		a.width = msg.Width
 		a.height = msg.Height
-		a.style = a.style.Width(a.width).Height(a.height)
+		a.updateSize()
 		return a, nil
 	case tea.KeyPressMsg:
 		switch msg.String() {
@@ -127,10 +127,25 @@ func (a *app) updateCurrentCategory(index int) tea.Cmd {
 
 	if _, ok := a.views[a.current]; !ok {
 		a.views[a.current] = newItemsView(a.current, a.client, a.theme)
+		a.updateSize()
 		return a.views[a.current].Init()
 	}
 
 	return nil
+}
+
+func (a *app) updateSize() {
+	a.style = a.style.Height(a.height).Width(a.width)
+	if a.commentsView != nil {
+		a.style = a.style.Width(a.width / 2)
+	}
+
+	w := a.width - a.style.GetHorizontalFrameSize()
+	// 2 for category bar
+	h := a.height - a.style.GetVerticalBorderSize() - 2
+	for _, v := range a.views {
+		v.setSize(w, h)
+	}
 }
 
 func (a app) renderCategories() string {

@@ -26,7 +26,8 @@ func NewApp(client *hn.Client, theme Theme) *app {
 	return &app{
 		client: client,
 		theme:  theme,
-		style:  lipgloss.NewStyle().Border(theme.border),
+		style: lipgloss.NewStyle().Border(theme.border.style).
+			BorderForeground(theme.border.color),
 		categories: []domain.Category{
 			domain.CategoryTop,
 			domain.CategoryNew,
@@ -108,7 +109,7 @@ func (a *app) View() tea.View {
 		a.renderCategories(),
 		a.views[a.current].View(),
 	)
-	content = a.style.Border(a.theme.border).Render(content)
+	content = a.style.Render(content)
 
 	if a.commentsView != nil {
 		content = lipgloss.JoinHorizontal(
@@ -149,7 +150,7 @@ func (a *app) updateSize() {
 }
 
 func (a app) renderCategories() string {
-	style := lipgloss.NewStyle().Padding(0, 1).Background(a.theme.categoryBackgroundColor)
+	style := lipgloss.NewStyle().Padding(0, 1)
 
 	categories := make([]string, len(a.categories))
 	for _, c := range a.categories {
@@ -161,8 +162,7 @@ func (a app) renderCategories() string {
 		categories = append(categories, style.Render(string(c)))
 	}
 
-	return lipgloss.NewStyle().Border(a.theme.border, false, false, true, false).
-		Background(a.theme.categoryBackgroundColor).
+	return lipgloss.NewStyle().Border(a.theme.border.style, false, false, true, false).
 		Width(a.style.GetWidth() - a.style.GetHorizontalFrameSize()).
 		Render(lipgloss.JoinHorizontal(lipgloss.Top, categories...))
 }

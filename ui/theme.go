@@ -7,17 +7,35 @@ import (
 )
 
 var DefaultTheme = Theme{
-	border: lipgloss.RoundedBorder(),
+	border: border{
+		style:       lipgloss.RoundedBorder(),
+		color:       lipgloss.Color("#757075"),
+		activeColor: lipgloss.Color("#baebf6"),
+	},
 
-	categoryBackgroundColor: lipgloss.Color("#ff6600"),
-	categoryColor:           lipgloss.Color("#000000"),
-	categoryActiveColor:     lipgloss.Color("#ffffff"),
+	categoryColor:       lipgloss.Color("#fcfcfc"),
+	categoryActiveColor: lipgloss.Color("#64d2e8"),
+
+	itemTitleColor:         lipgloss.Color("#fcfcfc"),
+	itemTitleSelectedColor: lipgloss.Color("#c6e472"),
+	itemDescColor:          lipgloss.Color("#fcfcfc"),
+	itemDescSelectedColor:  lipgloss.Color("#c6e472"),
 }
 
 type Theme struct {
-	border lipgloss.Border
+	border border
 
-	categoryBackgroundColor color.Color
-	categoryColor           color.Color
-	categoryActiveColor     color.Color
+	categoryColor       color.Color
+	categoryActiveColor color.Color
+
+	itemTitleColor         color.Color
+	itemTitleSelectedColor color.Color
+	itemDescColor          color.Color
+	itemDescSelectedColor  color.Color
+}
+
+type border struct {
+	style       lipgloss.Border
+	color       color.Color
+	activeColor color.Color
 }

@@ -64,21 +64,11 @@ func (a *app) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "right", "l", "tab":
 			index := slices.Index(a.categories, a.current)
 			index = min(index+1, len(a.categories)-1)
-			a.current = a.categories[index]
-			if _, ok := a.views[a.current]; !ok {
-				a.views[a.current] = newItemsView(a.current, a.client, a.theme)
-				cmd = a.views[a.current].Init()
-			}
-			return a, cmd
+			return a, a.updateCurrentCategory(index)
 		case "left", "h", "shift+tab":
 			index := slices.Index(a.categories, a.current)
 			index = max(index-1, 0)
-			a.current = a.categories[index]
-			if _, ok := a.views[a.current]; !ok {
-				a.views[a.current] = newItemsView(a.current, a.client, a.theme)
-				cmd = a.views[a.current].Init()
-			}
-			return a, cmd
+			return a, a.updateCurrentCategory(index)
 		case "ctrl+c":
 			return a, tea.Quit
 		}
@@ -130,6 +120,17 @@ func (a *app) View() tea.View {
 
 	v.Content = content
 	return v
+}
+
+func (a *app) updateCurrentCategory(index int) tea.Cmd {
+	a.current = a.categories[index]
+
+	if _, ok := a.views[a.current]; !ok {
+		a.views[a.current] = newItemsView(a.current, a.client, a.theme)
+		return a.views[a.current].Init()
+	}
+
+	return nil
 }
 
 func (a app) renderCategories() string {

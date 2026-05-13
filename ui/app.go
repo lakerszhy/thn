@@ -10,10 +10,11 @@ import (
 )
 
 type app struct {
-	categories []domain.Category
-	current    domain.Category
-	views      map[domain.Category]*itemsView
-	client     *hn.Client
+	categories   []domain.Category
+	current      domain.Category
+	views        map[domain.Category]*itemsView
+	commentsView *commentsView
+	client       *hn.Client
 }
 
 func NewApp(client *hn.Client) *app {
@@ -42,7 +43,10 @@ func (a *app) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 
 	switch msg := msg.(type) {
-	case tea.KeyMsg:
+	case itemSelectedMsg:
+		a.commentsView = newCommentsView(domain.Item(msg), a.client)
+		return a, a.commentsView.Init()
+	case tea.KeyPressMsg:
 		switch msg.String() {
 		case "right", "l", "tab":
 			index := slices.Index(a.categories, a.current)
@@ -65,12 +69,26 @@ func (a *app) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+c":
 			return a, tea.Quit
 		}
+
+		for i := range a.views {
+			if i == a.current {
+				a.views[i], cmd = a.views[i].Update(msg)
+				return a, cmd
+			}
+		}
+
+		return a, nil
 	}
 
 	var cmds []tea.Cmd
 
 	for i := range a.views {
 		a.views[i], cmd = a.views[i].Update(msg)
+		cmds = append(cmds, cmd)
+	}
+
+	if a.commentsView != nil {
+		a.commentsView, cmd = a.commentsView.Update(msg)
 		cmds = append(cmds, cmd)
 	}
 
@@ -94,7 +112,7 @@ func (a *app) View() tea.View {
 		categories = append(categories, style.Render(string(c)))
 	}
 
-	v.Content = lipgloss.JoinVertical(
+	content := lipgloss.JoinVertical(
 		lipgloss.Left,
 		lipgloss.JoinHorizontal(
 			lipgloss.Top, categories...,
@@ -102,5 +120,14 @@ func (a *app) View() tea.View {
 		a.views[a.current].View(),
 	)
 
+	if a.commentsView != nil {
+		content = lipgloss.JoinHorizontal(
+			lipgloss.Top,
+			content,
+			a.commentsView.View(),
+		)
+	}
+
+	v.Content = content
 	return v
 }

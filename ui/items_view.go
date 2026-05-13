@@ -45,6 +45,15 @@ func (t *itemsView) Update(msg tea.Msg) (*itemsView, tea.Cmd) {
 			t.items = msg.items
 		}
 		return t, nil
+	case tea.KeyPressMsg:
+		switch msg.String() {
+		case "enter":
+			if len(t.items) > 0 {
+				return t, func() tea.Msg {
+					return itemSelectedMsg(t.items[0])
+				}
+			}
+		}
 	}
 
 	return t, nil

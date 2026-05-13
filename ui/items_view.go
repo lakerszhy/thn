@@ -11,17 +11,19 @@ import (
 )
 
 type itemsView struct {
+	theme      Theme
 	category   domain.Category
 	pagination domain.Pagination
 	client     *hn.Client
 	items      []domain.Item
 }
 
-func newItemsView(category domain.Category, client *hn.Client) *itemsView {
+func newItemsView(category domain.Category, client *hn.Client, theme Theme) *itemsView {
 	return &itemsView{
 		category:   category,
 		client:     client,
 		pagination: domain.NewPagination(),
+		theme:      theme,
 	}
 }
 

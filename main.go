@@ -21,7 +21,7 @@ func run() error {
 		return err
 	}
 
-	app := ui.NewApp(client)
+	app := ui.NewApp(client, ui.DefaultTheme)
 	if _, err := tea.NewProgram(app).Run(); err != nil {
 		return err
 	}

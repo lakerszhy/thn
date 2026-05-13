@@ -15,11 +15,18 @@ type app struct {
 	views        map[domain.Category]*itemsView
 	commentsView *commentsView
 	client       *hn.Client
+
+	theme  Theme
+	style  lipgloss.Style
+	width  int
+	height int
 }
 
-func NewApp(client *hn.Client) *app {
+func NewApp(client *hn.Client, theme Theme) *app {
 	return &app{
 		client: client,
+		theme:  theme,
+		style:  lipgloss.NewStyle().Border(theme.border),
 		categories: []domain.Category{
 			domain.CategoryTop,
 			domain.CategoryNew,
@@ -30,7 +37,7 @@ func NewApp(client *hn.Client) *app {
 		},
 		current: domain.CategoryTop,
 		views: map[domain.Category]*itemsView{
-			domain.CategoryTop: newItemsView(domain.CategoryTop, client),
+			domain.CategoryTop: newItemsView(domain.CategoryTop, client, theme),
 		},
 	}
 }
@@ -44,8 +51,14 @@ func (a *app) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case itemSelectedMsg:
+		a.style = a.style.Width(a.width / 2)
 		a.commentsView = newCommentsView(domain.Item(msg), a.client)
 		return a, a.commentsView.Init()
+	case tea.WindowSizeMsg:
+		a.width = msg.Width
+		a.height = msg.Height
+		a.style = a.style.Width(a.width).Height(a.height)
+		return a, nil
 	case tea.KeyPressMsg:
 		switch msg.String() {
 		case "right", "l", "tab":
@@ -53,7 +66,7 @@ func (a *app) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			index = min(index+1, len(a.categories)-1)
 			a.current = a.categories[index]
 			if _, ok := a.views[a.current]; !ok {
-				a.views[a.current] = newItemsView(a.current, a.client)
+				a.views[a.current] = newItemsView(a.current, a.client, a.theme)
 				cmd = a.views[a.current].Init()
 			}
 			return a, cmd
@@ -62,7 +75,7 @@ func (a *app) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			index = max(index-1, 0)
 			a.current = a.categories[index]
 			if _, ok := a.views[a.current]; !ok {
-				a.views[a.current] = newItemsView(a.current, a.client)
+				a.views[a.current] = newItemsView(a.current, a.client, a.theme)
 				cmd = a.views[a.current].Init()
 			}
 			return a, cmd
@@ -100,6 +113,26 @@ func (a *app) View() tea.View {
 	v.WindowTitle = "Hacker News"
 	v.AltScreen = true
 
+	content := lipgloss.JoinVertical(
+		lipgloss.Left,
+		a.renderCategories(),
+		a.views[a.current].View(),
+	)
+	content = a.style.Border(a.theme.border).Render(content)
+
+	if a.commentsView != nil {
+		content = lipgloss.JoinHorizontal(
+			lipgloss.Top,
+			content,
+			a.commentsView.View(),
+		)
+	}
+
+	v.Content = content
+	return v
+}
+
+func (a app) renderCategories() string {
 	style := lipgloss.NewStyle().Padding(0, 1)
 
 	categories := make([]string, len(a.categories))
@@ -112,22 +145,7 @@ func (a *app) View() tea.View {
 		categories = append(categories, style.Render(string(c)))
 	}
 
-	content := lipgloss.JoinVertical(
-		lipgloss.Left,
-		lipgloss.JoinHorizontal(
-			lipgloss.Top, categories...,
-		),
-		a.views[a.current].View(),
-	)
-
-	if a.commentsView != nil {
-		content = lipgloss.JoinHorizontal(
-			lipgloss.Top,
-			content,
-			a.commentsView.View(),
-		)
-	}
-
-	v.Content = content
-	return v
+	return lipgloss.NewStyle().Border(a.theme.border, false, false, true, false).
+		Width(a.style.GetWidth() - a.style.GetHorizontalFrameSize()).
+		Render(lipgloss.JoinHorizontal(lipgloss.Top, categories...))
 }

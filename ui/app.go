@@ -2,6 +2,7 @@ package ui
 
 import (
 	"slices"
+	"strings"
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
@@ -117,7 +118,7 @@ func (a *app) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (a *app) View() tea.View {
 	var v tea.View
-	v.WindowTitle = "Hacker News"
+	v.WindowTitle = "THN - Terminal for Hacker News"
 	v.AltScreen = true
 
 	content := lipgloss.JoinVertical(
@@ -177,13 +178,13 @@ func (a app) renderCategories() string {
 	catStyle := lipgloss.NewStyle().Padding(0, 1)
 
 	categories := make([]string, len(a.categories))
-	for _, c := range a.categories {
+	for i, c := range a.categories {
 		if c == a.current {
 			catStyle = catStyle.Foreground(a.theme.categoryActiveColor).Bold(true)
 		} else {
 			catStyle = catStyle.Foreground(a.theme.categoryColor)
 		}
-		categories = append(categories, catStyle.Render(string(c)))
+		categories[i] = catStyle.Render(string(c))
 	}
 
 	style := lipgloss.NewStyle().BorderForeground(a.theme.border.color).
@@ -193,5 +194,5 @@ func (a app) renderCategories() string {
 		style = style.BorderForeground(a.theme.border.activeColor)
 	}
 
-	return style.Render(lipgloss.JoinHorizontal(lipgloss.Top, categories...))
+	return style.Render(strings.Join(categories, "|"))
 }

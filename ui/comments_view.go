@@ -150,7 +150,7 @@ func (c commentsView) fetch() tea.Cmd {
 	cmds = append(cmds, cmd)
 
 	cmd = func() tea.Msg {
-		items, err := c.client.FetchComments(context.Background(), c.item)
+		items, err := c.client.FetchComments(context.Background(), c.item.KIDs)
 		if err != nil {
 			return newCommentsLoadFailedMsg(c.item, err)
 		}
@@ -170,7 +170,7 @@ func (c commentsView) fetchChildren(parentID int64, ids []int64) tea.Cmd {
 	cmds = append(cmds, cmd)
 
 	cmd = func() tea.Msg {
-		items, err := c.client.FetchCommentsByIDs(context.Background(), ids)
+		items, err := c.client.FetchComments(context.Background(), ids)
 		if err != nil {
 			return newCommentChildrenLoadFailedMsg(c.item, parentID, err)
 		}

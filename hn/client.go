@@ -62,48 +62,28 @@ func (c *Client) FetchItems(ctx context.Context, cat domain.Category, p domain.P
 	start, end := p.Range(len(ids))
 	pageIDs := ids[start:end]
 
-	items := make([]domain.Item, len(pageIDs))
-
-	g, ctx := errgroup.WithContext(ctx)
-	for i, id := range pageIDs {
-		g.Go(func() error {
-			item, err := c.fetchItem(ctx, id)
-			if err != nil {
-				return err
-			}
-			items[i] = item.ToDomain()
-			return nil
-		})
-	}
-
-	if err := g.Wait(); err != nil {
+	items, err := c.fetchItems(ctx, pageIDs)
+	if err != nil {
 		return nil, err
 	}
 
-	return items, nil
-}
-
-func (c *Client) FetchComments(ctx context.Context, item domain.Item) ([]domain.Comment, error) {
-	return c.FetchCommentsByIDs(ctx, item.KIDs)
-}
-
-func (c *Client) FetchCommentsByIDs(ctx context.Context, ids []int64) ([]domain.Comment, error) {
-	comments := make([]domain.Comment, len(ids))
-
-	g, ctx := errgroup.WithContext(ctx)
-	for i, id := range ids {
-		g.Go(func() error {
-			comment, err := c.fetchItem(ctx, id)
-			if err != nil {
-				return err
-			}
-			comments[i] = comment.ToComment()
-			return nil
-		})
+	ret := make([]domain.Item, len(items))
+	for i, item := range items {
+		ret[i] = item.ToDomain()
 	}
 
-	if err := g.Wait(); err != nil {
+	return ret, nil
+}
+
+func (c *Client) FetchComments(ctx context.Context, ids []int64) ([]domain.Comment, error) {
+	items, err := c.fetchItems(ctx, ids)
+	if err != nil {
 		return nil, err
+	}
+
+	comments := make([]domain.Comment, len(items))
+	for i, item := range items {
+		comments[i] = item.ToComment()
 	}
 
 	return comments, nil
@@ -123,6 +103,28 @@ func (c *Client) fetchIDs(ctx context.Context, cat category) ([]int64, error) {
 	}
 
 	return ids, nil
+}
+
+func (c *Client) fetchItems(ctx context.Context, ids []int64) ([]item, error) {
+	items := make([]item, len(ids))
+
+	g, ctx := errgroup.WithContext(ctx)
+	for i, id := range ids {
+		g.Go(func() error {
+			item, err := c.fetchItem(ctx, id)
+			if err != nil {
+				return err
+			}
+			items[i] = item
+			return nil
+		})
+	}
+
+	if err := g.Wait(); err != nil {
+		return nil, err
+	}
+
+	return items, nil
 }
 
 func (c *Client) fetchItem(ctx context.Context, id int64) (item, error) {

@@ -5,13 +5,11 @@ import (
 	"fmt"
 	"io"
 	"strings"
-	"time"
 
 	"charm.land/bubbles/v2/list"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
-	"github.com/dustin/go-humanize"
 	"github.com/lakerszhy/thn/domain"
 	"github.com/lakerszhy/thn/hn"
 )
@@ -181,8 +179,7 @@ func (listItem) FilterValue() string {
 }
 
 func (l listItem) Description() string {
-	v := fmt.Sprintf("%d points by %s %s",
-		l.item.Score, l.item.By, humanize.Time(time.Unix(l.item.Time, 0)))
+	v := fmt.Sprintf("%d points by %s %s", l.item.Score, l.item.By, l.item.TimeAgo())
 
 	if l.item.Descendants == 1 {
 		v = fmt.Sprintf("%s | 1 comment", v)

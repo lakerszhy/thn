@@ -1,5 +1,11 @@
 package domain
 
+import (
+	"time"
+
+	"github.com/dustin/go-humanize"
+)
+
 type Item struct {
 	ID          int64
 	Type        string
@@ -14,4 +20,8 @@ type Item struct {
 	Title       string
 	Parts       []int64
 	Descendants int64
+}
+
+func (i Item) TimeAgo() string {
+	return humanize.Time(time.Unix(i.Time, 0))
 }

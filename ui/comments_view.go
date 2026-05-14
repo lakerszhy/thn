@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"time"
 
 	"charm.land/bubbles/v2/viewport"
 	tea "charm.land/bubbletea/v2"
@@ -12,7 +11,6 @@ import (
 	"github.com/JohannesKaufmann/html-to-markdown/v2/converter"
 	"github.com/JohannesKaufmann/html-to-markdown/v2/plugin/base"
 	"github.com/JohannesKaufmann/html-to-markdown/v2/plugin/commonmark"
-	"github.com/dustin/go-humanize"
 	"github.com/lakerszhy/thn/domain"
 	"github.com/lakerszhy/thn/hn"
 )
@@ -68,7 +66,7 @@ func (c *commentsView) Update(msg tea.Msg) (*commentsView, tea.Cmd) {
 
 			var s strings.Builder
 			for _, v := range comments {
-				fmt.Fprintf(&s, "%s\n\n", v.Text)
+				fmt.Fprintf(&s, "%s\n", v.Text)
 			}
 
 			c.model.SetContent(s.String())
@@ -92,7 +90,7 @@ func (c *commentsView) setSize(width, height int) {
 }
 
 func (c *commentsView) renderComment(comment domain.Item) string {
-	desc := fmt.Sprintf("%s %s", comment.By, humanize.Time(time.Unix(comment.Time, 0)))
+	desc := fmt.Sprintf("%s %s", comment.By, comment.TimeAgo())
 	desc = lipgloss.NewStyle().Foreground(c.theme.commentDescColor).
 		Faint(true).Render(desc)
 

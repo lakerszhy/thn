@@ -62,7 +62,7 @@ func (t *itemsView) Update(msg tea.Msg) (*itemsView, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case spinner.TickMsg:
-		if t.msg.IsLoading() {
+		if t.msg.isLoading() {
 			t.spinner, cmd = t.spinner.Update(msg)
 		}
 		return t, cmd

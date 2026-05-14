@@ -78,7 +78,7 @@ func (t *itemsView) Update(msg tea.Msg) (*itemsView, tea.Cmd) {
 			t.model.SetItems(nil)
 			return t, nil
 		case stateLoadSuccess:
-			items := make([]list.Item, len(msg.items)+1)
+			items := make([]list.Item, len(msg.items))
 			for i, v := range msg.items {
 				items[i] = listItem{item: v}
 			}

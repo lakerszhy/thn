@@ -73,11 +73,11 @@ func (a *app) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			a.commentsView = nil
 			a.updateSize()
 			return a, nil
-		case "right", "l", "tab":
+		case "tab":
 			index := slices.Index(a.categories, a.current)
 			index = min(index+1, len(a.categories)-1)
 			return a, a.updateCurrentCategory(index)
-		case "left", "h", "shift+tab":
+		case "shift+tab":
 			index := slices.Index(a.categories, a.current)
 			index = max(index-1, 0)
 			return a, a.updateCurrentCategory(index)

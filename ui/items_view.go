@@ -284,7 +284,7 @@ func (d itemDeletage) renderLoadMore(selected bool) string {
 		content = d.normalTitle.Render(content)
 	}
 
-	return fmt.Sprintf("\n%s", content)
+	return fmt.Sprintf("%s", content)
 }
 
 type listItem struct {

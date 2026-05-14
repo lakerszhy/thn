@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"charm.land/bubbles/v2/list"
+	"charm.land/bubbles/v2/spinner"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
@@ -19,6 +20,8 @@ type itemsView struct {
 	category   domain.Category
 	pagination domain.Pagination
 	client     *hn.Client
+	msg        itemsMsg
+	spinner    spinner.Model
 
 	model  list.Model
 	width  int
@@ -34,38 +37,54 @@ func newItemsView(category domain.Category, client *hn.Client, theme Theme) *ite
 	model.SetShowHelp(false)
 	model.DisableQuitKeybindings()
 
+	s := spinner.New()
+	s.Spinner = spinner.Dot
+
 	return &itemsView{
 		category:   category,
 		client:     client,
 		pagination: domain.NewPagination(),
 		theme:      theme,
 		model:      model,
+		spinner:    s,
 	}
 }
 
 func (t *itemsView) Init() tea.Cmd {
-	return func() tea.Msg {
-		items, err := t.client.FetchItems(context.Background(), t.category, t.pagination)
-		if err != nil {
-			return err
-		}
-		return itemsMsg{
-			category: t.category,
-			items:    items,
-		}
-	}
+	return tea.Batch(
+		t.spinner.Tick,
+		t.fetch(),
+	)
 }
 
 func (t *itemsView) Update(msg tea.Msg) (*itemsView, tea.Cmd) {
+	var cmd tea.Cmd
+
 	switch msg := msg.(type) {
+	case spinner.TickMsg:
+		if t.msg.IsLoading() {
+			t.spinner, cmd = t.spinner.Update(msg)
+		}
+		return t, cmd
 	case itemsMsg:
-		if msg.category == t.category {
+		if msg.category != t.category {
+			return t, nil
+		}
+
+		t.msg = msg
+
+		switch msg.state {
+		case stateLoading, stateLoadFailed:
+			t.model.SetItems(nil)
+			return t, nil
+		case stateLoadSuccess:
 			items := make([]list.Item, len(msg.items))
 			for i, v := range msg.items {
 				items[i] = listItem{item: v}
 			}
 			t.model.SetItems(items)
 		}
+
 		return t, nil
 	case tea.KeyPressMsg:
 		switch msg.String() {
@@ -83,18 +102,46 @@ func (t *itemsView) Update(msg tea.Msg) (*itemsView, tea.Cmd) {
 		}
 	}
 
-	var cmd tea.Cmd
 	t.model, cmd = t.model.Update(msg)
 	return t, cmd
 }
 
 func (t *itemsView) View() string {
+	switch t.msg.state {
+	case stateLoading:
+		return lipgloss.NewStyle().Align(lipgloss.Center).Width(t.model.Width()).
+			Render(fmt.Sprintf("%s Loading...", t.spinner.View()))
+	case stateLoadFailed:
+		return fmt.Sprintf("Load Failed: %s", t.msg.err.Error())
+	case stateLoadSuccess:
+		return t.model.View()
+	}
 	return t.model.View()
 }
 
 func (t *itemsView) setSize(width int, height int) {
 	t.model.SetWidth(width)
 	t.model.SetHeight(height)
+}
+
+func (t itemsView) fetch() tea.Cmd {
+	var cmds []tea.Cmd
+
+	cmd := func() tea.Msg {
+		return newItemsLoadingMsg(t.category)
+	}
+	cmds = append(cmds, cmd)
+
+	cmd = func() tea.Msg {
+		items, err := t.client.FetchItems(context.Background(), t.category, t.pagination)
+		if err != nil {
+			return newItemsLoadFailedMsg(t.category, err)
+		}
+		return newItemsLoadSuccessMsg(t.category, items)
+	}
+	cmds = append(cmds, cmd)
+
+	return tea.Batch(cmds...)
 }
 
 type itemDeletage struct {

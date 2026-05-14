@@ -78,23 +78,24 @@ func (t *itemsView) Update(msg tea.Msg) (*itemsView, tea.Cmd) {
 			t.model.SetItems(nil)
 			return t, nil
 		case stateLoadSuccess:
-			items := make([]list.Item, len(msg.items))
+			items := make([]list.Item, len(msg.items)+1)
 			for i, v := range msg.items {
 				items[i] = listItem{item: v}
 			}
+			items[len(items)-1] = loadMoreItem{}
 			t.model.SetItems(items)
 		case stateLoadMoreSuccess:
 			t.pagination = t.pagination.Next()
 
 			items := make([]list.Item, 0, len(msg.items)+len(t.msg.items))
-			items = append(items, t.model.Items()...)
+			items = append(items, t.model.Items()[0:len(t.model.Items())-1]...)
 			for _, v := range msg.items {
 				items = append(items, listItem{item: v})
 			}
+			items = append(items, loadMoreItem{})
 			t.model.SetItems(items)
 		}
-
-		return t, nil
+		// handle by delegate, so not return
 	case tea.KeyPressMsg:
 		switch msg.String() {
 		case "enter":
@@ -103,13 +104,14 @@ func (t *itemsView) Update(msg tea.Msg) (*itemsView, tea.Cmd) {
 				return t, nil
 			}
 
-			if item, ok := t.model.Items()[index].(listItem); ok {
+			switch i := t.model.Items()[index].(type) {
+			case listItem:
 				return t, func() tea.Msg {
-					return itemSelectedMsg(item.item)
+					return itemSelectedMsg(i.item)
 				}
+			case loadMoreItem:
+				return t, t.fetchMore()
 			}
-		case "m":
-			return t, t.fetchMore()
 		}
 	}
 
@@ -188,14 +190,16 @@ type itemDeletage struct {
 	selectedDesc  lipgloss.Style
 
 	ellipsis string
+
+	msg itemsMsg
 }
 
 func newItemDeletage(t Theme) *itemDeletage {
 	// 6: 1 for ">", 3 for index, 1 for ".", 1 for space
-	desc := lipgloss.NewStyle().Padding(0, 0, 0, 6)
+	desc := lipgloss.NewStyle().PaddingLeft(6)
 	return &itemDeletage{
 		// 1 for ">"
-		normalTitle:   lipgloss.NewStyle().Padding(0, 0, 0, 1).Foreground(t.itemTitleColor),
+		normalTitle:   lipgloss.NewStyle().PaddingLeft(1).Foreground(t.itemTitleColor),
 		normalDesc:    desc.Foreground(t.itemDescColor).Faint(true),
 		selectedTitle: lipgloss.NewStyle().Foreground(t.itemTitleSelectedColor),
 		selectedDesc:  desc.Foreground(t.itemDescSelectedColor).Faint(true),
@@ -205,6 +209,13 @@ func newItemDeletage(t Theme) *itemDeletage {
 
 func (d itemDeletage) Render(w io.Writer, m list.Model, index int, item list.Item) {
 	if m.Width() <= 0 {
+		return
+	}
+
+	var selected = index == m.Index()
+
+	if _, ok := item.(loadMoreItem); ok {
+		fmt.Fprintf(w, "%s", d.renderLoadMore(selected))
 		return
 	}
 
@@ -229,7 +240,7 @@ func (d itemDeletage) Render(w io.Writer, m list.Model, index int, item list.Ite
 	}
 	desc = strings.Join(lines, "\n")
 
-	if index == m.Index() {
+	if selected {
 		title = d.selectedTitle.Render(">" + title)
 		desc = d.selectedDesc.Render(desc)
 	} else {
@@ -248,8 +259,32 @@ func (d itemDeletage) Spacing() int {
 	return 0
 }
 
-func (d itemDeletage) Update(tea.Msg, *list.Model) tea.Cmd {
+func (d *itemDeletage) Update(msg tea.Msg, m *list.Model) tea.Cmd {
+	switch msg := msg.(type) {
+	case itemsMsg:
+		d.msg = msg
+	}
 	return nil
+}
+
+func (d itemDeletage) renderLoadMore(selected bool) string {
+	content := "More"
+	switch d.msg.state {
+	case stateLoadingMore:
+		content = "Loading..."
+	case stateLoadMoreFailed:
+		content = fmt.Sprintf("Load more failed: %s", d.msg.err.Error())
+	}
+
+	if selected {
+		content = lipgloss.NewStyle().PaddingLeft(1).Render(content)
+		content = d.selectedTitle.Render(">" + content)
+	} else {
+		content = lipgloss.NewStyle().PaddingLeft(1).Render(content)
+		content = d.normalTitle.Render(content)
+	}
+
+	return fmt.Sprintf("\n%s", content)
 }
 
 type listItem struct {
@@ -270,4 +305,11 @@ func (l listItem) Description() string {
 	}
 
 	return v
+}
+
+type loadMoreItem struct {
+}
+
+func (l loadMoreItem) FilterValue() string {
+	return ""
 }

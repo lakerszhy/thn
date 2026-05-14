@@ -78,9 +78,18 @@ func (t *itemsView) Update(msg tea.Msg) (*itemsView, tea.Cmd) {
 			t.model.SetItems(nil)
 			return t, nil
 		case stateLoadSuccess:
-			items := make([]list.Item, len(msg.items))
+			items := make([]list.Item, len(msg.items)+1)
 			for i, v := range msg.items {
 				items[i] = listItem{item: v}
+			}
+			t.model.SetItems(items)
+		case stateLoadMoreSuccess:
+			t.pagination = t.pagination.Next()
+
+			items := make([]list.Item, 0, len(msg.items)+len(t.msg.items))
+			items = append(items, t.model.Items()...)
+			for _, v := range msg.items {
+				items = append(items, listItem{item: v})
 			}
 			t.model.SetItems(items)
 		}
@@ -99,6 +108,8 @@ func (t *itemsView) Update(msg tea.Msg) (*itemsView, tea.Cmd) {
 					return itemSelectedMsg(item.item)
 				}
 			}
+		case "m":
+			return t, t.fetchMore()
 		}
 	}
 
@@ -113,7 +124,7 @@ func (t *itemsView) View() string {
 			Render(fmt.Sprintf("%s Loading...", t.spinner.View()))
 	case stateLoadFailed:
 		return fmt.Sprintf("Load Failed: %s", t.msg.err.Error())
-	case stateLoadSuccess:
+	case stateLoadSuccess, stateLoadMoreSuccess, stateLoadMoreFailed:
 		return t.model.View()
 	}
 	return t.model.View()
@@ -138,6 +149,30 @@ func (t itemsView) fetch() tea.Cmd {
 			return newItemsLoadFailedMsg(t.category, err)
 		}
 		return newItemsLoadSuccessMsg(t.category, items)
+	}
+	cmds = append(cmds, cmd)
+
+	return tea.Batch(cmds...)
+}
+
+func (t itemsView) fetchMore() tea.Cmd {
+	if t.msg.isLoading() || t.msg.isLoadingMore() {
+		return nil
+	}
+
+	var cmds []tea.Cmd
+
+	cmd := func() tea.Msg {
+		return newItemsLoadingMoreMsg(t.category)
+	}
+	cmds = append(cmds, cmd)
+
+	cmd = func() tea.Msg {
+		items, err := t.client.FetchItems(context.Background(), t.category, t.pagination.Next())
+		if err != nil {
+			return newItemsLoadMoreFailedMsg(t.category, err)
+		}
+		return newItemsLoadMoreSuccessMsg(t.category, items)
 	}
 	cmds = append(cmds, cmd)
 

@@ -4,8 +4,11 @@ import "github.com/lakerszhy/thn/domain"
 
 const (
 	stateLoading = iota
+	stateLoadingMore
 	stateLoadSuccess
+	stateLoadMoreSuccess
 	stateLoadFailed
+	stateLoadMoreFailed
 )
 
 type itemsMsg struct {
@@ -17,6 +20,28 @@ type itemsMsg struct {
 func newItemsLoadingMsg(cat domain.Category) itemsMsg {
 	return itemsMsg{
 		baseMsg:  baseMsg{state: stateLoading},
+		category: cat,
+	}
+}
+
+func newItemsLoadingMoreMsg(cat domain.Category) itemsMsg {
+	return itemsMsg{
+		baseMsg:  baseMsg{state: stateLoadingMore},
+		category: cat,
+	}
+}
+
+func newItemsLoadMoreSuccessMsg(cat domain.Category, items []domain.Item) itemsMsg {
+	return itemsMsg{
+		baseMsg:  baseMsg{state: stateLoadMoreSuccess},
+		category: cat,
+		items:    items,
+	}
+}
+
+func newItemsLoadMoreFailedMsg(cat domain.Category, err error) itemsMsg {
+	return itemsMsg{
+		baseMsg:  baseMsg{state: stateLoadMoreFailed, err: err},
 		category: cat,
 	}
 }
@@ -75,6 +100,10 @@ type baseMsg struct {
 
 func (b baseMsg) isLoading() bool {
 	return b.state == stateLoading
+}
+
+func (b baseMsg) isLoadingMore() bool {
+	return b.state == stateLoadingMore
 }
 
 func (b baseMsg) isSuccess() bool {

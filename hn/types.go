@@ -58,3 +58,19 @@ func (i item) ToDomain() domain.Item {
 		Descendants: i.Descendants,
 	}
 }
+
+func (i item) ToComment() domain.Comment {
+	return domain.Comment{
+		Base: domain.Base{
+			ID:      i.ID,
+			Time:    i.Time,
+			By:      i.By,
+			Deleted: i.Deleted,
+			Dead:    i.Dead,
+		},
+		Text:        i.Text,
+		Parent:      i.Parent,
+		KIDs:        i.KIDs,
+		Descendants: i.Descendants,
+	}
+}

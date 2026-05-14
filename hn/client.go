@@ -83,17 +83,21 @@ func (c *Client) FetchItems(ctx context.Context, cat domain.Category, p domain.P
 	return items, nil
 }
 
-func (c *Client) FetchComments(ctx context.Context, item domain.Item) ([]domain.Item, error) {
-	comments := make([]domain.Item, len(item.KIDs))
+func (c *Client) FetchComments(ctx context.Context, item domain.Item) ([]domain.Comment, error) {
+	return c.FetchCommentsByIDs(ctx, item.KIDs)
+}
+
+func (c *Client) FetchCommentsByIDs(ctx context.Context, ids []int64) ([]domain.Comment, error) {
+	comments := make([]domain.Comment, len(ids))
 
 	g, ctx := errgroup.WithContext(ctx)
-	for i, id := range item.KIDs {
+	for i, id := range ids {
 		g.Go(func() error {
 			comment, err := c.fetchItem(ctx, id)
 			if err != nil {
 				return err
 			}
-			comments[i] = comment.ToDomain()
+			comments[i] = comment.ToComment()
 			return nil
 		})
 	}

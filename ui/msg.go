@@ -65,29 +65,58 @@ type itemSelectedMsg domain.Item
 
 type commentsMsg struct {
 	item     domain.Item
-	comments []domain.Item
+	parentID int64
+	comments []domain.Comment
 	baseMsg
 }
 
 func newCommentsLoadingMsg(item domain.Item) commentsMsg {
 	return commentsMsg{
-		baseMsg: baseMsg{state: stateLoading},
-		item:    item,
+		baseMsg:  baseMsg{state: stateLoading},
+		item:     item,
+		parentID: item.ID,
 	}
 }
 
-func newCommentsLoadSuccessMsg(item domain.Item, comments []domain.Item) commentsMsg {
+func newCommentsLoadSuccessMsg(item domain.Item, comments []domain.Comment) commentsMsg {
 	return commentsMsg{
 		baseMsg:  baseMsg{state: stateLoadSuccess},
 		item:     item,
+		parentID: item.ID,
 		comments: comments,
 	}
 }
 
 func newCommentsLoadFailedMsg(item domain.Item, err error) commentsMsg {
 	return commentsMsg{
-		baseMsg: baseMsg{state: stateLoadFailed, err: err},
-		item:    item,
+		baseMsg:  baseMsg{state: stateLoadFailed, err: err},
+		item:     item,
+		parentID: item.ID,
+	}
+}
+
+func newCommentChildrenLoadingMsg(item domain.Item, parentID int64) commentsMsg {
+	return commentsMsg{
+		baseMsg:  baseMsg{state: stateLoadingMore},
+		item:     item,
+		parentID: parentID,
+	}
+}
+
+func newCommentChildrenLoadSuccessMsg(item domain.Item, parentID int64, comments []domain.Comment) commentsMsg {
+	return commentsMsg{
+		baseMsg:  baseMsg{state: stateLoadMoreSuccess},
+		item:     item,
+		parentID: parentID,
+		comments: comments,
+	}
+}
+
+func newCommentChildrenLoadFailedMsg(item domain.Item, parentID int64, err error) commentsMsg {
+	return commentsMsg{
+		baseMsg:  baseMsg{state: stateLoadMoreFailed, err: err},
+		item:     item,
+		parentID: parentID,
 	}
 }
 

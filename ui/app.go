@@ -159,19 +159,22 @@ func (a *app) updateCurrentCategory(index int) tea.Cmd {
 }
 
 func (a *app) updateSize() {
-	// 2 for category bar
-	contentHeight := a.windowHeight - a.itemsViewStyle.GetVerticalBorderSize() - 2
-	contentWidth := a.windowWidth
+	itemsWidth := a.windowWidth
+	commentsWidth := 0
 
 	if a.commentsView != nil {
-		contentWidth /= 2
-		a.commentsView.setSize(a.windowWidth-contentWidth, a.windowHeight)
+		itemsWidth /= 3
+		commentsWidth = a.windowWidth - itemsWidth
+		a.commentsView.setSize(commentsWidth, a.windowHeight)
 	}
 
-	a.itemsViewStyle = a.itemsViewStyle.Width(contentWidth)
+	a.itemsViewStyle = a.itemsViewStyle.Width(itemsWidth)
+
+	// 2 for category bar
+	itemsHeight := a.windowHeight - a.itemsViewStyle.GetVerticalBorderSize() - 2
 
 	for _, v := range a.views {
-		v.setSize(contentWidth-a.itemsViewStyle.GetHorizontalFrameSize(), contentHeight)
+		v.setSize(itemsWidth-a.itemsViewStyle.GetHorizontalFrameSize(), itemsHeight)
 	}
 }
 

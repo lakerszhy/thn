@@ -39,7 +39,7 @@ func New(ctx context.Context) (*Client, error) {
 	return &Client{
 		db:        client,
 		cache:     make(map[domain.Category][]int64),
-		semaphore: make(chan struct{}, 10),
+		semaphore: make(chan struct{}, 20),
 	}, nil
 }
 

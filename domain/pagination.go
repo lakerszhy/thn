@@ -6,7 +6,7 @@ type Pagination struct {
 }
 
 func NewPagination() Pagination {
-	return Pagination{page: 0, pageSize: 20}
+	return Pagination{page: 0, pageSize: 50}
 }
 
 func (p Pagination) Next() Pagination {

@@ -24,27 +24,7 @@ type commentsView struct {
 	converter *converter.Converter
 	msg       commentsMsg
 	spinner   spinner.Model
-
-	roots      []int64
-	nodes      map[int64]*commentNode
-	selectedID int64
-	visible    []visibleComment
-}
-
-type commentNode struct {
-	comment  domain.Comment
-	parentID int64
-	children []int64
-	loaded   bool
-	loading  bool
-	expanded bool
-	err      error
-}
-
-type visibleComment struct {
-	id    int64
-	depth int
-	line  int
+	tree      *commentTree
 }
 
 func newCommentsView(item domain.Item, client *hn.Client, theme Theme) *commentsView {
@@ -68,7 +48,7 @@ func newCommentsView(item domain.Item, client *hn.Client, theme Theme) *comments
 		model:     vp,
 		converter: converter,
 		spinner:   s,
-		nodes:     make(map[int64]*commentNode),
+		tree:      newCommentTree(item.ID),
 	}
 }
 
@@ -96,25 +76,38 @@ func (c *commentsView) Update(msg tea.Msg) (*commentsView, tea.Cmd) {
 
 		c.msg = msg
 		c.applyCommentsMsg(msg)
+		if msg.state == stateLoadingMore {
+			return c, c.spinner.Tick
+		}
 		return c, nil
 	case tea.KeyPressMsg:
 		switch msg.String() {
 		case "enter", " ", "space", "right", "l":
-			return c, c.toggleSelected()
+			req := c.tree.ToggleSelected()
+			c.render()
+			if req.ok {
+				return c, c.fetchChildren(req.parentID, req.ids)
+			}
+			return c, nil
 		case "left", "h", "u":
-			c.selectParent()
+			c.tree.SelectParent()
+			c.render()
 			return c, nil
 		case "up", "k":
-			c.selectVisible(-1)
+			c.tree.SelectVisible(-1)
+			c.render()
 			return c, nil
 		case "down", "j":
-			c.selectVisible(1)
+			c.tree.SelectVisible(1)
+			c.render()
 			return c, nil
 		case "shift+up", "K", "p":
-			c.selectSibling(-1)
+			c.tree.SelectSibling(-1)
+			c.render()
 			return c, nil
 		case "shift+down", "J", "n":
-			c.selectSibling(1)
+			c.tree.SelectSibling(1)
+			c.render()
 			return c, nil
 		}
 	}
@@ -124,11 +117,11 @@ func (c *commentsView) Update(msg tea.Msg) (*commentsView, tea.Cmd) {
 }
 
 func (c *commentsView) View() string {
-	if c.msg.state == stateLoading && len(c.roots) == 0 {
+	if c.msg.state == stateLoading && c.tree.RootCount() == 0 {
 		return lipgloss.NewStyle().Align(lipgloss.Center).Width(c.model.Width()).
 			Render(fmt.Sprintf("%s Loading...", c.spinner.View()))
 	}
-	if c.msg.state == stateLoadFailed && len(c.roots) == 0 {
+	if c.msg.state == stateLoadFailed && c.tree.RootCount() == 0 {
 		return fmt.Sprintf("Load Failed: %s", c.msg.err.Error())
 	}
 
@@ -190,136 +183,26 @@ func (c *commentsView) applyCommentsMsg(msg commentsMsg) {
 			c.model.SetContent(fmt.Sprintf("Load Failed: %s", msg.err.Error()))
 			return
 		case stateLoadSuccess:
-			c.roots = c.roots[:0]
-			for _, comment := range msg.comments {
-				c.upsertComment(comment, c.item.ID)
-				c.roots = append(c.roots, comment.ID)
-			}
-			if c.selectedID == 0 && len(c.roots) > 0 {
-				c.selectedID = c.roots[0]
-			}
+			c.tree.SetRoots(msg.comments)
 		}
 		c.render()
-		return
-	}
-
-	node, ok := c.nodes[msg.parentID]
-	if !ok {
 		return
 	}
 
 	switch msg.state {
 	case stateLoadingMore:
-		node.loading = true
-		node.err = nil
+		c.tree.StartLoading(msg.parentID)
 	case stateLoadMoreSuccess:
-		node.children = node.children[:0]
-		node.loaded = true
-		node.loading = false
-		node.err = nil
-		for _, comment := range msg.comments {
-			c.upsertComment(comment, node.comment.ID)
-			node.children = append(node.children, comment.ID)
-		}
+		c.tree.SetChildren(msg.parentID, msg.comments)
 	case stateLoadMoreFailed:
-		node.loading = false
-		node.err = msg.err
+		c.tree.FailLoading(msg.parentID, msg.err)
 	}
 
 	c.render()
-}
-
-func (c *commentsView) upsertComment(comment domain.Comment, parentID int64) {
-	node, ok := c.nodes[comment.ID]
-	if !ok {
-		c.nodes[comment.ID] = &commentNode{
-			comment:  comment,
-			parentID: parentID,
-		}
-		return
-	}
-	node.comment = comment
-	node.parentID = parentID
-}
-
-func (c *commentsView) toggleSelected() tea.Cmd {
-	node := c.nodes[c.selectedID]
-	if node == nil || len(node.comment.KIDs) == 0 {
-		return nil
-	}
-
-	if node.expanded {
-		node.expanded = false
-		c.render()
-		return nil
-	}
-
-	node.expanded = true
-	if node.loaded {
-		c.render()
-		return nil
-	}
-	if node.loading {
-		c.render()
-		return nil
-	}
-
-	return c.fetchChildren(node.comment.ID, node.comment.KIDs)
-}
-
-func (c *commentsView) selectVisible(delta int) {
-	index := c.visibleIndex(c.selectedID)
-	if index == -1 {
-		return
-	}
-
-	index += delta
-	if index < 0 || index >= len(c.visible) {
-		return
-	}
-
-	c.selectedID = c.visible[index].id
-	c.render()
-}
-
-func (c *commentsView) selectParent() {
-	node := c.nodes[c.selectedID]
-	if node == nil || node.parentID == c.item.ID {
-		return
-	}
-
-	c.selectedID = node.parentID
-	c.render()
-}
-
-func (c *commentsView) selectSibling(delta int) {
-	node := c.nodes[c.selectedID]
-	if node == nil {
-		return
-	}
-
-	siblings := c.roots
-	if parent := c.nodes[node.parentID]; parent != nil {
-		siblings = parent.children
-	}
-
-	for i, id := range siblings {
-		if id != c.selectedID {
-			continue
-		}
-		next := i + delta
-		if next < 0 || next >= len(siblings) {
-			return
-		}
-		c.selectedID = siblings[next]
-		c.render()
-		return
-	}
 }
 
 func (c *commentsView) render() {
-	if len(c.roots) == 0 {
-		c.visible = nil
+	if c.tree.RootCount() == 0 {
 		if c.msg.state == stateLoadSuccess {
 			c.model.SetContent("No comments")
 		}
@@ -327,37 +210,29 @@ func (c *commentsView) render() {
 	}
 
 	var s strings.Builder
-	c.visible = c.visible[:0]
 	line := 0
-	for _, id := range c.roots {
-		c.renderNode(&s, id, 0, &line)
+	for _, visible := range c.tree.Visible() {
+		node := c.tree.Node(visible.id)
+		if node == nil {
+			continue
+		}
+
+		c.tree.SetVisibleLine(visible.id, line)
+		c.appendLines(&s, &line, c.renderCommentHeader(node, visible.depth))
+		c.appendLines(&s, &line, c.renderCommentBody(node.comment, visible.depth), "")
+
+		if node.expanded {
+			if node.loading {
+				c.appendLines(&s, &line, fmt.Sprintf("%s%s Loading...", strings.Repeat("  ", visible.depth+1), c.spinner.View()), "")
+			}
+			if node.err != nil {
+				c.appendLines(&s, &line, fmt.Sprintf("%sLoad failed: %s", strings.Repeat("  ", visible.depth+1), node.err.Error()), "")
+			}
+		}
 	}
 
 	c.model.SetContent(strings.TrimRight(s.String(), "\n"))
 	c.ensureSelectedVisible()
-}
-
-func (c *commentsView) renderNode(s *strings.Builder, id int64, depth int, line *int) {
-	node := c.nodes[id]
-	if node == nil {
-		return
-	}
-
-	c.visible = append(c.visible, visibleComment{id: id, depth: depth, line: *line})
-	c.appendLines(s, line, c.renderCommentHeader(node, depth))
-	c.appendLines(s, line, c.renderCommentBody(node.comment, depth), "")
-
-	if node.expanded {
-		if node.loading {
-			c.appendLines(s, line, fmt.Sprintf("%s%s Loading...", strings.Repeat("  ", depth+1), c.spinner.View()), "")
-		}
-		if node.err != nil {
-			c.appendLines(s, line, fmt.Sprintf("%sLoad failed: %s", strings.Repeat("  ", depth+1), node.err.Error()), "")
-		}
-		for _, childID := range node.children {
-			c.renderNode(s, childID, depth+1, line)
-		}
-	}
 }
 
 func (c *commentsView) appendLines(s *strings.Builder, line *int, lines ...string) {
@@ -389,7 +264,7 @@ func (c *commentsView) renderCommentHeader(node *commentNode, depth int) string 
 
 	header := fmt.Sprintf("%s%s %s", strings.Repeat("  ", depth), marker, desc)
 	style := lipgloss.NewStyle().Foreground(c.theme.commentDescColor).Faint(true)
-	if node.comment.ID == c.selectedID {
+	if node.comment.ID == c.tree.SelectedID() {
 		style = style.Foreground(c.theme.itemTitleSelectedColor).Faint(false).Bold(true)
 	}
 	return style.Render(header)
@@ -416,18 +291,9 @@ func (c *commentsView) renderCommentBody(comment domain.Comment, depth int) stri
 		Render(content)
 }
 
-func (c *commentsView) visibleIndex(id int64) int {
-	for i, visible := range c.visible {
-		if visible.id == id {
-			return i
-		}
-	}
-	return -1
-}
-
 func (c *commentsView) ensureSelectedVisible() {
-	for _, visible := range c.visible {
-		if visible.id == c.selectedID {
+	for _, visible := range c.tree.Visible() {
+		if visible.id == c.tree.SelectedID() {
 			c.model.EnsureVisible(visible.line, 0, 0)
 			return
 		}
@@ -435,13 +301,5 @@ func (c *commentsView) ensureSelectedVisible() {
 }
 
 func (c *commentsView) hasLoadingComments() bool {
-	if c.msg.state == stateLoading {
-		return true
-	}
-	for _, node := range c.nodes {
-		if node.loading {
-			return true
-		}
-	}
-	return false
+	return c.msg.state == stateLoading || c.tree.HasLoading()
 }

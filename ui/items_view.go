@@ -231,17 +231,6 @@ func (d itemDeletage) Render(w io.Writer, m list.Model, index int, item list.Ite
 		return
 	}
 
-	textwidth := m.Width() - d.normalTitle.GetHorizontalPadding()
-
-	var lines []string
-	for i, line := range strings.Split(desc, "\n") {
-		if i >= d.Height()-1 {
-			break
-		}
-		lines = append(lines, ansi.Truncate(line, textwidth, d.ellipsis))
-	}
-	desc = strings.Join(lines, "\n")
-
 	if domain != "" {
 		domain = fmt.Sprintf(" (%s)", domain)
 	}
@@ -256,8 +245,12 @@ func (d itemDeletage) Render(w io.Writer, m list.Model, index int, item list.Ite
 		desc = d.normalDesc.Render(desc)
 	}
 
+	textwidth := m.Width() - d.normalTitle.GetHorizontalPadding()
+
 	title = fmt.Sprintf("%s%s", title, domain)
 	title = ansi.Truncate(title, textwidth, d.ellipsis)
+
+	desc = ansi.Truncate(desc, textwidth, d.ellipsis)
 
 	fmt.Fprintf(w, "%s\n%s", title, desc)
 }

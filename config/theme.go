@@ -16,10 +16,8 @@ var DefaultTheme = Theme{
 	CategoryColor:       lipgloss.Color("#fcfcfc"),
 	CategoryActiveColor: lipgloss.Color("#64d2e8"),
 
-	ItemTitleColor:         lipgloss.Color("#fcfcfc"),
-	ItemTitleSelectedColor: lipgloss.Color("#c6e472"),
-	ItemDescColor:          lipgloss.Color("#fcfcfc"),
-	ItemDescSelectedColor:  lipgloss.Color("#c6e472"),
+	ItemColor:         lipgloss.Color("#fcfcfc"),
+	ItemSelectedColor: lipgloss.Color("#c6e472"),
 
 	CommentDescColor:    lipgloss.Color("#fcfcfc"),
 	CommentContentColor: lipgloss.Color("#fcfcfc"),
@@ -31,10 +29,8 @@ type Theme struct {
 	CategoryColor       color.Color
 	CategoryActiveColor color.Color
 
-	ItemTitleColor         color.Color
-	ItemTitleSelectedColor color.Color
-	ItemDescColor          color.Color
-	ItemDescSelectedColor  color.Color
+	ItemColor         color.Color
+	ItemSelectedColor color.Color
 
 	CommentDescColor    color.Color
 	CommentContentColor color.Color

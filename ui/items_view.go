@@ -201,10 +201,10 @@ func newItemDeletage(t config.Theme) *itemDeletage {
 	desc := lipgloss.NewStyle().PaddingLeft(6)
 	return &itemDeletage{
 		// 1 for ">"
-		normalTitle:   lipgloss.NewStyle().PaddingLeft(1).Foreground(t.ItemTitleColor),
-		normalDesc:    desc.Foreground(t.ItemDescColor).Faint(true),
-		selectedTitle: lipgloss.NewStyle().Foreground(t.ItemTitleSelectedColor),
-		selectedDesc:  desc.Foreground(t.ItemDescSelectedColor).Faint(true),
+		normalTitle:   lipgloss.NewStyle().PaddingLeft(1).Foreground(t.ItemColor),
+		normalDesc:    desc.Foreground(t.ItemColor).Faint(true),
+		selectedTitle: lipgloss.NewStyle().Foreground(t.ItemSelectedColor),
+		selectedDesc:  desc.Foreground(t.ItemSelectedColor).Faint(true),
 		ellipsis:      "...",
 	}
 }
@@ -248,7 +248,7 @@ func (d itemDeletage) Render(w io.Writer, m list.Model, index int, item list.Ite
 
 	if selected {
 		title = d.selectedTitle.Render(">" + title)
-		domain = d.selectedTitle.UnsetPadding().Render(domain)
+		domain = d.selectedTitle.Faint(true).UnsetPadding().Render(domain)
 		desc = d.selectedDesc.Render(desc)
 	} else {
 		title = d.normalTitle.Render(title)

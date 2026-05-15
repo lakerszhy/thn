@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net/url"
 	"strings"
 
 	"charm.land/bubbles/v2/list"
@@ -81,7 +82,7 @@ func (t *itemsView) Update(msg tea.Msg) (*itemsView, tea.Cmd) {
 		case stateLoadSuccess:
 			items := make([]list.Item, len(msg.items)+1)
 			for i, v := range msg.items {
-				items[i] = listItem{item: v}
+				items[i] = listItem{Item: v}
 			}
 			items[len(items)-1] = loadMoreItem{}
 			t.model.SetItems(items)
@@ -91,7 +92,7 @@ func (t *itemsView) Update(msg tea.Msg) (*itemsView, tea.Cmd) {
 			items := make([]list.Item, 0, len(msg.items)+len(t.msg.items))
 			items = append(items, t.model.Items()[0:len(t.model.Items())-1]...)
 			for _, v := range msg.items {
-				items = append(items, listItem{item: v})
+				items = append(items, listItem{Item: v})
 			}
 			items = append(items, loadMoreItem{})
 			t.model.SetItems(items)
@@ -108,7 +109,7 @@ func (t *itemsView) Update(msg tea.Msg) (*itemsView, tea.Cmd) {
 			switch i := t.model.Items()[index].(type) {
 			case listItem:
 				return t, func() tea.Msg {
-					return itemSelectedMsg(i.item)
+					return itemSelectedMsg(i.Item)
 				}
 			case loadMoreItem:
 				return t, t.fetchMore()
@@ -220,17 +221,17 @@ func (d itemDeletage) Render(w io.Writer, m list.Model, index int, item list.Ite
 		return
 	}
 
-	var title, desc string
+	var title, desc, domain string
 
 	if i, ok := item.(listItem); ok {
-		title = fmt.Sprintf("%3d. %s", index+1, i.item.Title)
+		title = fmt.Sprintf("%3d. %s", index+1, i.Title)
+		domain = i.Domain()
 		desc = i.Description()
 	} else {
 		return
 	}
 
 	textwidth := m.Width() - d.normalTitle.GetHorizontalPadding()
-	title = ansi.Truncate(title, textwidth, d.ellipsis)
 
 	var lines []string
 	for i, line := range strings.Split(desc, "\n") {
@@ -241,13 +242,22 @@ func (d itemDeletage) Render(w io.Writer, m list.Model, index int, item list.Ite
 	}
 	desc = strings.Join(lines, "\n")
 
+	if domain != "" {
+		domain = fmt.Sprintf(" (%s)", domain)
+	}
+
 	if selected {
 		title = d.selectedTitle.Render(">" + title)
+		domain = d.selectedTitle.UnsetPadding().Render(domain)
 		desc = d.selectedDesc.Render(desc)
 	} else {
 		title = d.normalTitle.Render(title)
+		domain = d.normalDesc.UnsetPadding().Render(domain)
 		desc = d.normalDesc.Render(desc)
 	}
+
+	title = fmt.Sprintf("%s%s", title, domain)
+	title = ansi.Truncate(title, textwidth, d.ellipsis)
 
 	fmt.Fprintf(w, "%s\n%s", title, desc)
 }
@@ -289,7 +299,7 @@ func (d itemDeletage) renderLoadMore(selected bool) string {
 }
 
 type listItem struct {
-	item domain.Item
+	domain.Item
 }
 
 func (listItem) FilterValue() string {
@@ -297,15 +307,34 @@ func (listItem) FilterValue() string {
 }
 
 func (l listItem) Description() string {
-	v := fmt.Sprintf("%d points by %s %s", l.item.Score, l.item.By, l.item.TimeAgo())
+	v := fmt.Sprintf("%d points by %s %s", l.Score, l.By, l.TimeAgo())
 
-	if l.item.Descendants == 1 {
+	if l.Descendants == 1 {
 		v = fmt.Sprintf("%s | 1 comment", v)
-	} else if l.item.Descendants > 1 {
-		v = fmt.Sprintf("%s | %d comments", v, l.item.Descendants)
+	} else if l.Descendants > 1 {
+		v = fmt.Sprintf("%s | %d comments", v, l.Descendants)
 	}
 
 	return v
+}
+
+func (l listItem) Domain() string {
+	u, err := url.Parse(l.URL)
+	if err != nil {
+		return ""
+	}
+
+	host := strings.TrimPrefix(u.Hostname(), "www.")
+
+	if host == "github.com" || host == "twitter.com" || host == "x.com" {
+		paths := strings.Split(strings.TrimPrefix(u.Path, "/"), "/")
+		if len(paths) > 1 {
+			r, _ := url.JoinPath(host, paths[0])
+			return r
+		}
+	}
+
+	return host
 }
 
 type loadMoreItem struct {

@@ -6,6 +6,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+	"github.com/lakerszhy/thn/config"
 	"github.com/lakerszhy/thn/domain"
 	"github.com/lakerszhy/thn/hn"
 )
@@ -19,17 +20,17 @@ type app struct {
 
 	client *hn.Client
 
-	theme          Theme
+	theme          config.Theme
 	itemsViewStyle lipgloss.Style
 	windowWidth    int
 	windowHeight   int
 }
 
-func NewApp(client *hn.Client, theme Theme) *app {
+func NewApp(client *hn.Client, theme config.Theme) *app {
 	return &app{
 		client:         client,
 		theme:          theme,
-		itemsViewStyle: lipgloss.NewStyle().Border(theme.border.style),
+		itemsViewStyle: lipgloss.NewStyle().Border(theme.Border.Style),
 		categories: []domain.Category{
 			domain.CategoryTop,
 			domain.CategoryNew,
@@ -127,9 +128,9 @@ func (a *app) View() tea.View {
 		a.views[a.current].View(),
 	)
 
-	style := a.itemsViewStyle.BorderForeground(a.theme.border.activeColor)
+	style := a.itemsViewStyle.BorderForeground(a.theme.Border.ActiveColor)
 	if !a.focusOnItemsView {
-		style = a.itemsViewStyle.BorderForeground(a.theme.border.color)
+		style = a.itemsViewStyle.BorderForeground(a.theme.Border.Color)
 	}
 	content = style.Render(content)
 
@@ -180,18 +181,18 @@ func (a app) renderCategories() string {
 	categories := make([]string, len(a.categories))
 	for i, c := range a.categories {
 		if c == a.current {
-			catStyle = catStyle.Foreground(a.theme.categoryActiveColor).Bold(true)
+			catStyle = catStyle.Foreground(a.theme.CategoryActiveColor).Bold(true)
 		} else {
-			catStyle = catStyle.Foreground(a.theme.categoryColor)
+			catStyle = catStyle.Foreground(a.theme.CategoryColor)
 		}
 		categories[i] = catStyle.Render(string(c))
 	}
 
-	style := lipgloss.NewStyle().BorderForeground(a.theme.border.color).
-		Border(a.theme.border.style, false, false, true, false).
+	style := lipgloss.NewStyle().BorderForeground(a.theme.Border.Color).
+		Border(a.theme.Border.Style, false, false, true, false).
 		Width(a.itemsViewStyle.GetWidth() - a.itemsViewStyle.GetHorizontalFrameSize())
 	if a.focusOnItemsView {
-		style = style.BorderForeground(a.theme.border.activeColor)
+		style = style.BorderForeground(a.theme.Border.ActiveColor)
 	}
 
 	return style.Render(strings.Join(categories, "|"))

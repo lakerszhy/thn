@@ -32,7 +32,6 @@ type Comment struct {
 	Parent      int64
 	Descendants int64
 	KIDs        []int64
-	Children    []*Comment
 }
 
 type Base struct {

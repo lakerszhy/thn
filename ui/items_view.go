@@ -11,12 +11,13 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/lakerszhy/thn/config"
 	"github.com/lakerszhy/thn/domain"
 	"github.com/lakerszhy/thn/hn"
 )
 
 type itemsView struct {
-	theme      Theme
+	theme      config.Theme
 	category   domain.Category
 	pagination domain.Pagination
 	client     *hn.Client
@@ -28,7 +29,7 @@ type itemsView struct {
 	height int
 }
 
-func newItemsView(category domain.Category, client *hn.Client, theme Theme) *itemsView {
+func newItemsView(category domain.Category, client *hn.Client, theme config.Theme) *itemsView {
 	model := list.New(nil, newItemDeletage(theme), 0, 0)
 	model.SetShowTitle(false)
 	model.SetFilteringEnabled(false)
@@ -182,7 +183,7 @@ func (t itemsView) fetchMore() tea.Cmd {
 }
 
 type itemDeletage struct {
-	theme Theme
+	theme config.Theme
 
 	normalTitle   lipgloss.Style
 	selectedTitle lipgloss.Style
@@ -194,15 +195,15 @@ type itemDeletage struct {
 	msg itemsMsg
 }
 
-func newItemDeletage(t Theme) *itemDeletage {
+func newItemDeletage(t config.Theme) *itemDeletage {
 	// 6: 1 for ">", 3 for index, 1 for ".", 1 for space
 	desc := lipgloss.NewStyle().PaddingLeft(6)
 	return &itemDeletage{
 		// 1 for ">"
-		normalTitle:   lipgloss.NewStyle().PaddingLeft(1).Foreground(t.itemTitleColor),
-		normalDesc:    desc.Foreground(t.itemDescColor).Faint(true),
-		selectedTitle: lipgloss.NewStyle().Foreground(t.itemTitleSelectedColor),
-		selectedDesc:  desc.Foreground(t.itemDescSelectedColor).Faint(true),
+		normalTitle:   lipgloss.NewStyle().PaddingLeft(1).Foreground(t.ItemTitleColor),
+		normalDesc:    desc.Foreground(t.ItemDescColor).Faint(true),
+		selectedTitle: lipgloss.NewStyle().Foreground(t.ItemTitleSelectedColor),
+		selectedDesc:  desc.Foreground(t.ItemDescSelectedColor).Faint(true),
 		ellipsis:      "...",
 	}
 }

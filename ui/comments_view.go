@@ -12,6 +12,7 @@ import (
 	"github.com/JohannesKaufmann/html-to-markdown/v2/converter"
 	"github.com/JohannesKaufmann/html-to-markdown/v2/plugin/base"
 	"github.com/JohannesKaufmann/html-to-markdown/v2/plugin/commonmark"
+	"github.com/lakerszhy/thn/config"
 	"github.com/lakerszhy/thn/domain"
 	"github.com/lakerszhy/thn/hn"
 )
@@ -19,7 +20,7 @@ import (
 type commentsView struct {
 	item      domain.Item
 	client    *hn.Client
-	theme     Theme
+	theme     config.Theme
 	model     viewport.Model
 	converter *converter.Converter
 	msg       commentsMsg
@@ -27,7 +28,7 @@ type commentsView struct {
 	tree      *commentTree
 }
 
-func newCommentsView(item domain.Item, client *hn.Client, theme Theme) *commentsView {
+func newCommentsView(item domain.Item, client *hn.Client, theme config.Theme) *commentsView {
 	converter := converter.NewConverter(
 		converter.WithPlugins(
 			base.NewBasePlugin(),
@@ -263,9 +264,9 @@ func (c *commentsView) renderCommentHeader(node *commentNode, depth int) string 
 	}
 
 	header := fmt.Sprintf("%s%s %s", strings.Repeat("  ", depth), marker, desc)
-	style := lipgloss.NewStyle().Foreground(c.theme.commentDescColor).Faint(true)
+	style := lipgloss.NewStyle().Foreground(c.theme.CommentDescColor).Faint(true)
 	if node.comment.ID == c.tree.SelectedID() {
-		style = style.Foreground(c.theme.itemTitleSelectedColor).Faint(false).Bold(true)
+		style = style.Foreground(c.theme.ItemTitleSelectedColor).Faint(false).Bold(true)
 	}
 	return style.Render(header)
 }
@@ -287,7 +288,7 @@ func (c *commentsView) renderCommentBody(comment domain.Comment, depth int) stri
 	return lipgloss.NewStyle().
 		PaddingLeft(depth*2 + 2).
 		Width(max(1, c.model.Width()-depth*2-2)).
-		Foreground(c.theme.commentContentColor).
+		Foreground(c.theme.CommentContentColor).
 		Render(content)
 }
 

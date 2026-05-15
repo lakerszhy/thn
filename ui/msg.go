@@ -134,7 +134,3 @@ func (b baseMsg) isLoading() bool {
 func (b baseMsg) isLoadingMore() bool {
 	return b.state == stateLoadingMore
 }
-
-func (b baseMsg) isSuccess() bool {
-	return b.state == stateLoadSuccess
-}

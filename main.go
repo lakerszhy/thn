@@ -5,6 +5,7 @@ import (
 	"log"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/lakerszhy/thn/config"
 	"github.com/lakerszhy/thn/hn"
 	"github.com/lakerszhy/thn/ui"
 )
@@ -21,7 +22,7 @@ func run() error {
 		return err
 	}
 
-	app := ui.NewApp(client, ui.DefaultTheme)
+	app := ui.NewApp(client, config.DefaultTheme)
 	if _, err := tea.NewProgram(app).Run(); err != nil {
 		return err
 	}

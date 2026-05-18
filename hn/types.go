@@ -43,10 +43,14 @@ type item struct {
 
 func (i item) ToDomain() domain.Item {
 	return domain.Item{
-		ID:          i.ID,
+		Base: domain.Base{
+			ID:      i.ID,
+			Time:    i.Time,
+			By:      i.By,
+			Deleted: i.Deleted,
+			Dead:    i.Dead,
+		},
 		Type:        i.Type,
-		By:          i.By,
-		Time:        i.Time,
 		Text:        i.Text,
 		Parent:      i.Parent,
 		Poll:        i.Poll,

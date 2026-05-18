@@ -7,10 +7,8 @@ import (
 )
 
 type Item struct {
-	ID          int64
+	Base
 	Type        string
-	By          string
-	Time        int64
 	Text        string
 	Parent      int64
 	Poll        int64
@@ -20,10 +18,6 @@ type Item struct {
 	Title       string
 	Parts       []int64
 	Descendants int64
-}
-
-func (i Item) TimeAgo() string {
-	return humanize.Time(time.Unix(i.Time, 0))
 }
 
 type Comment struct {

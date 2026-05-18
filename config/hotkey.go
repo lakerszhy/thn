@@ -6,13 +6,13 @@ var Hotkeys = Hotkey{
 	PrevCategory: key.NewBinding(key.WithKeys("shift+tab")),
 	NextCategory: key.NewBinding(key.WithKeys("tab")),
 
-	PrevItem:         key.NewBinding(key.WithKeys("up", "k")),
-	NextItem:         key.NewBinding(key.WithKeys("down", "j")),
-	PrevPage:         key.NewBinding(key.WithKeys("left", "h")),
-	NextPage:         key.NewBinding(key.WithKeys("right", "l")),
-	OpenCommentsView: key.NewBinding(key.WithKeys("enter", "space")),
+	PrevItem:     key.NewBinding(key.WithKeys("up", "k")),
+	NextItem:     key.NewBinding(key.WithKeys("down", "j")),
+	PrevPage:     key.NewBinding(key.WithKeys("left", "h")),
+	NextPage:     key.NewBinding(key.WithKeys("right", "l")),
+	OpenComments: key.NewBinding(key.WithKeys("enter", "space")),
 
-	CloseCommentsView:  key.NewBinding(key.WithKeys("esc")),
+	CloseComments:      key.NewBinding(key.WithKeys("esc")),
 	ToggleSubComments:  key.NewBinding(key.WithKeys("enter", "space")),
 	SelectParent:       key.NewBinding(key.WithKeys("left", "h")),
 	PrevComment:        key.NewBinding(key.WithKeys("up", "k")),
@@ -29,13 +29,13 @@ type Hotkey struct {
 	PrevCategory key.Binding
 	NextCategory key.Binding
 
-	PrevItem         key.Binding
-	NextItem         key.Binding
-	PrevPage         key.Binding
-	NextPage         key.Binding
-	OpenCommentsView key.Binding
+	PrevItem     key.Binding
+	NextItem     key.Binding
+	PrevPage     key.Binding
+	NextPage     key.Binding
+	OpenComments key.Binding
 
-	CloseCommentsView  key.Binding
+	CloseComments      key.Binding
 	ToggleSubComments  key.Binding
 	SelectParent       key.Binding
 	PrevComment        key.Binding

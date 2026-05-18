@@ -110,7 +110,7 @@ func (t *itemsView) Update(msg tea.Msg) (*itemsView, tea.Cmd) {
 		}
 		// handle by delegate, so not return
 	case tea.KeyPressMsg:
-		if key.Matches(msg, t.hotkey.OpenCommentsView) {
+		if key.Matches(msg, t.hotkey.OpenComments) {
 			index := t.model.Index()
 			if index < 0 || index >= len(t.model.Items()) {
 				return t, nil

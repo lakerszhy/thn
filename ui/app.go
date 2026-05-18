@@ -181,7 +181,7 @@ func (a *app) onKeyPressMsg(msg tea.KeyPressMsg) (*app, tea.Cmd) {
 		return a, tea.Quit
 	}
 
-	if key.Matches(msg, a.hotkey.CloseCommentsView) {
+	if key.Matches(msg, a.hotkey.CloseComments) {
 		a.focusOnItemsView = true
 		a.commentsView = nil
 		a.updateSize()

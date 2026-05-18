@@ -264,9 +264,9 @@ func (c *commentsView) renderCommentHeader(node *commentNode, depth int) string 
 	}
 
 	header := fmt.Sprintf("%s%s %s", strings.Repeat("  ", depth), marker, desc)
-	style := lipgloss.NewStyle().Foreground(c.theme.CommentDescColor).Faint(true)
+	style := lipgloss.NewStyle().Foreground(c.theme.Comment.DescColor)
 	if node.comment.ID == c.tree.SelectedID() {
-		style = style.Foreground(c.theme.Item.TitleSelectedColor).Faint(false).Bold(true)
+		style = style.Foreground(c.theme.Comment.DescSelectedColor).Bold(true)
 	}
 	return style.Render(header)
 }
@@ -288,7 +288,7 @@ func (c *commentsView) renderCommentBody(comment domain.Comment, depth int) stri
 	return lipgloss.NewStyle().
 		PaddingLeft(depth*2 + 2).
 		Width(max(1, c.model.Width()-depth*2-2)).
-		Foreground(c.theme.CommentContentColor).
+		Foreground(c.theme.Comment.ContentColor).
 		Render(content)
 }
 

@@ -30,7 +30,7 @@ func NewApp(client *hn.Client, theme config.Theme) *app {
 	return &app{
 		client:         client,
 		theme:          theme,
-		itemsViewStyle: lipgloss.NewStyle().Border(theme.Border.Style),
+		itemsViewStyle: lipgloss.NewStyle().Border(theme.TitleBar.Border.Style),
 		categories: []domain.Category{
 			domain.CategoryTop,
 			domain.CategoryNew,
@@ -128,9 +128,9 @@ func (a *app) View() tea.View {
 		a.views[a.current].View(),
 	)
 
-	style := a.itemsViewStyle.BorderForeground(a.theme.Border.ActiveColor)
+	style := a.itemsViewStyle.BorderForeground(a.theme.TitleBar.Border.FocusColor)
 	if !a.focusOnItemsView {
-		style = a.itemsViewStyle.BorderForeground(a.theme.Border.Color)
+		style = a.itemsViewStyle.BorderForeground(a.theme.TitleBar.Border.Color)
 	}
 	content = style.Render(content)
 
@@ -184,19 +184,21 @@ func (a app) renderCategories() string {
 	categories := make([]string, len(a.categories))
 	for i, c := range a.categories {
 		if c == a.current {
-			catStyle = catStyle.Foreground(a.theme.CategoryActiveColor).Bold(true)
+			catStyle = catStyle.Foreground(a.theme.TitleBar.CategorySelectedColor).Bold(true)
 		} else {
-			catStyle = catStyle.Foreground(a.theme.CategoryColor)
+			catStyle = catStyle.Foreground(a.theme.TitleBar.CategoryColor)
 		}
 		categories[i] = catStyle.Render(string(c))
 	}
 
-	style := lipgloss.NewStyle().BorderForeground(a.theme.Border.Color).
-		Border(a.theme.Border.Style, false, false, true, false).
+	style := lipgloss.NewStyle().BorderForeground(a.theme.TitleBar.Border.Color).
+		Border(a.theme.TitleBar.Border.Style, false, false, true, false).
 		Width(a.itemsViewStyle.GetWidth() - a.itemsViewStyle.GetHorizontalFrameSize())
 	if a.focusOnItemsView {
-		style = style.BorderForeground(a.theme.Border.ActiveColor)
+		style = style.BorderForeground(a.theme.TitleBar.Border.FocusColor)
 	}
 
-	return style.Render(strings.Join(categories, "|"))
+	divider := lipgloss.NewStyle().Foreground(a.theme.TitleBar.DivideColor).Render("|")
+
+	return style.Render(strings.Join(categories, divider))
 }

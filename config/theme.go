@@ -6,39 +6,45 @@ import (
 	"charm.land/lipgloss/v2"
 )
 
-var DefaultTheme = Theme{
-	Border: border{
-		Style:       lipgloss.RoundedBorder(),
-		Color:       lipgloss.Color("#757075"),
-		ActiveColor: lipgloss.Color("#baebf6"),
+var HackerNewsTheme = Theme{
+	TitleBar: TitleBarTheme{
+		Border: BorderTheme{
+			Style:      lipgloss.RoundedBorder(),  // 圆角边框更有现代感
+			Color:      lipgloss.Color("#6E6E6E"), // 未激活时暗灰边框
+			FocusColor: lipgloss.Color("#FF6600"), // 激活/聚焦时 HN 橙色边框
+		},
+		CategoryColor:         lipgloss.Color("#B4B4B4"), // 浅灰导航
+		CategorySelectedColor: lipgloss.Color("#FF6600"), // 选中分类变橙
+		DivideColor:           lipgloss.Color("#8C8C8C"),
 	},
 
 	Item: ItemTheme{
-		TitleColor:          lipgloss.Color("#fcfcfc"),
-		TitleSelectedColor:  lipgloss.Color("#c6e472"),
-		DomainColor:         lipgloss.Color("#828282"),
-		DomainSelectedColor: lipgloss.Color("#8fa060"),
-		DescColor:           lipgloss.Color("#828282"),
-		DescSelectedColor:   lipgloss.Color("#8fa060"),
+		TitleColor:          lipgloss.Color("#E6E6E6"), // 亮白/浅灰标题，护眼
+		TitleSelectedColor:  lipgloss.Color("#FF6600"), // 选中行变橙色
+		DomainColor:         lipgloss.Color("#8C8C8C"), // 暗灰域名
+		DomainSelectedColor: lipgloss.Color("#a54301"), // 选中行域名变成过渡橙灰
+		DescColor:           lipgloss.Color("#8C8C8C"), // 灰色次要信息
+		DescSelectedColor:   lipgloss.Color("#a54301"), // 选中行次要信息变亮
 	},
 
-	CategoryColor:       lipgloss.Color("#fcfcfc"),
-	CategoryActiveColor: lipgloss.Color("#64d2e8"),
-
-	CommentDescColor:    lipgloss.Color("#fcfcfc"),
-	CommentContentColor: lipgloss.Color("#fcfcfc"),
+	Comment: CommentTheme{
+		DescColor:         lipgloss.Color("#8C8C8C"), // 评论区作者与时间
+		DescSelectedColor: lipgloss.Color("#FF6600"),
+		ContentColor:      lipgloss.Color("#E6E6E6"), // 评论正文
+	},
 }
 
 type Theme struct {
-	Border border
+	TitleBar TitleBarTheme
+	Item     ItemTheme
+	Comment  CommentTheme
+}
 
-	Item ItemTheme
-
-	CategoryColor       color.Color
-	CategoryActiveColor color.Color
-
-	CommentDescColor    color.Color
-	CommentContentColor color.Color
+type TitleBarTheme struct {
+	Border                BorderTheme
+	CategoryColor         color.Color
+	CategorySelectedColor color.Color
+	DivideColor           color.Color
 }
 
 type ItemTheme struct {
@@ -50,8 +56,14 @@ type ItemTheme struct {
 	DescSelectedColor   color.Color
 }
 
-type border struct {
-	Style       lipgloss.Border
-	Color       color.Color
-	ActiveColor color.Color
+type CommentTheme struct {
+	DescColor         color.Color
+	DescSelectedColor color.Color
+	ContentColor      color.Color
+}
+
+type BorderTheme struct {
+	Style      lipgloss.Border
+	Color      color.Color
+	FocusColor color.Color
 }

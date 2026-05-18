@@ -4,6 +4,7 @@ import (
 	"slices"
 	"strings"
 
+	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/lakerszhy/thn/config"
@@ -20,16 +21,19 @@ type app struct {
 
 	client *hn.Client
 
-	theme          config.Theme
+	theme  config.Theme
+	hotkey config.Hotkey
+
 	itemsViewStyle lipgloss.Style
 	windowWidth    int
 	windowHeight   int
 }
 
-func NewApp(client *hn.Client, theme config.Theme) *app {
+func NewApp(client *hn.Client, theme config.Theme, hotkey config.Hotkey) *app {
 	return &app{
 		client:         client,
 		theme:          theme,
+		hotkey:         hotkey,
 		itemsViewStyle: lipgloss.NewStyle().Border(theme.TitleBar.Border.Style),
 		categories: []domain.Category{
 			domain.CategoryTop,
@@ -42,7 +46,7 @@ func NewApp(client *hn.Client, theme config.Theme) *app {
 		focusOnItemsView: true,
 		current:          domain.CategoryTop,
 		views: map[domain.Category]*itemsView{
-			domain.CategoryTop: newItemsView(domain.CategoryTop, client, theme),
+			domain.CategoryTop: newItemsView(domain.CategoryTop, client, theme, hotkey),
 		},
 	}
 }
@@ -68,38 +72,7 @@ func (a *app) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		a.updateSize()
 		return a, nil
 	case tea.KeyPressMsg:
-		switch msg.String() {
-		case "esc":
-			a.focusOnItemsView = true
-			a.commentsView = nil
-			a.updateSize()
-			return a, nil
-		case "tab":
-			index := slices.Index(a.categories, a.current)
-			index = min(index+1, len(a.categories)-1)
-			return a, a.updateCurrentCategory(index)
-		case "shift+tab":
-			index := slices.Index(a.categories, a.current)
-			index = max(index-1, 0)
-			return a, a.updateCurrentCategory(index)
-		case "ctrl+c":
-			return a, tea.Quit
-		}
-
-		if a.focusOnItemsView {
-			for i := range a.views {
-				if i == a.current {
-					a.views[i], cmd = a.views[i].Update(msg)
-					return a, cmd
-				}
-			}
-			return a, nil
-		} else if a.commentsView != nil {
-			a.commentsView, cmd = a.commentsView.Update(msg)
-			return a, cmd
-		}
-
-		return a, nil
+		return a.onKeyPressMsg(msg)
 	}
 
 	var cmds []tea.Cmd
@@ -150,7 +123,7 @@ func (a *app) updateCurrentCategory(index int) tea.Cmd {
 	a.current = a.categories[index]
 
 	if _, ok := a.views[a.current]; !ok {
-		a.views[a.current] = newItemsView(a.current, a.client, a.theme)
+		a.views[a.current] = newItemsView(a.current, a.client, a.theme, a.hotkey)
 		a.updateSize()
 		return a.views[a.current].Init()
 	}
@@ -201,4 +174,45 @@ func (a app) renderCategories() string {
 	divider := lipgloss.NewStyle().Foreground(a.theme.TitleBar.DivideColor).Render("|")
 
 	return style.Render(strings.Join(categories, divider))
+}
+
+func (a *app) onKeyPressMsg(msg tea.KeyPressMsg) (*app, tea.Cmd) {
+	if key.Matches(msg, a.hotkey.Quit) {
+		return a, tea.Quit
+	}
+
+	if key.Matches(msg, a.hotkey.CloseCommentsView) {
+		a.focusOnItemsView = true
+		a.commentsView = nil
+		a.updateSize()
+		return a, nil
+	}
+
+	if key.Matches(msg, a.hotkey.NextCategory) {
+		index := slices.Index(a.categories, a.current)
+		index = min(index+1, len(a.categories)-1)
+		return a, a.updateCurrentCategory(index)
+	}
+
+	if key.Matches(msg, a.hotkey.PrevCategory) {
+		index := slices.Index(a.categories, a.current)
+		index = max(index-1, 0)
+		return a, a.updateCurrentCategory(index)
+	}
+
+	var cmd tea.Cmd
+
+	if !a.focusOnItemsView {
+		a.commentsView, cmd = a.commentsView.Update(msg)
+		return a, cmd
+	}
+
+	for i := range a.views {
+		if i == a.current {
+			a.views[i], cmd = a.views[i].Update(msg)
+			return a, cmd
+		}
+	}
+
+	return a, nil
 }

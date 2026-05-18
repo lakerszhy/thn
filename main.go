@@ -22,7 +22,7 @@ func run() error {
 		return err
 	}
 
-	app := ui.NewApp(client, config.HackerNewsTheme)
+	app := ui.NewApp(client, config.HackerNewsTheme, config.Hotkeys)
 	if _, err := tea.NewProgram(app).Run(); err != nil {
 		return err
 	}

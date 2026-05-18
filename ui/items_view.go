@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"strings"
 
+	"charm.land/bubbles/v2/key"
 	"charm.land/bubbles/v2/list"
 	"charm.land/bubbles/v2/spinner"
 	tea "charm.land/bubbletea/v2"
@@ -19,6 +20,7 @@ import (
 
 type itemsView struct {
 	theme      config.Theme
+	hotkey     config.Hotkey
 	category   domain.Category
 	pagination domain.Pagination
 	client     *hn.Client
@@ -30,7 +32,7 @@ type itemsView struct {
 	height int
 }
 
-func newItemsView(category domain.Category, client *hn.Client, theme config.Theme) *itemsView {
+func newItemsView(category domain.Category, client *hn.Client, theme config.Theme, hotkey config.Hotkey) *itemsView {
 	model := list.New(nil, newItemDeletage(theme), 0, 0)
 	model.SetShowTitle(false)
 	model.SetFilteringEnabled(false)
@@ -38,12 +40,21 @@ func newItemsView(category domain.Category, client *hn.Client, theme config.Them
 	model.SetShowPagination(false)
 	model.SetShowHelp(false)
 	model.DisableQuitKeybindings()
+	model.KeyMap = list.KeyMap{
+		CursorUp:   hotkey.PrevItem,
+		CursorDown: hotkey.NextItem,
+		PrevPage:   hotkey.PrevPage,
+		NextPage:   hotkey.NextPage,
+		GoToStart:  hotkey.GoToStart,
+		GoToEnd:    hotkey.GoToEnd,
+	}
 
 	s := spinner.New()
 	s.Spinner = spinner.Dot
 
 	return &itemsView{
 		category:   category,
+		hotkey:     hotkey,
 		client:     client,
 		pagination: domain.NewPagination(),
 		theme:      theme,
@@ -99,8 +110,7 @@ func (t *itemsView) Update(msg tea.Msg) (*itemsView, tea.Cmd) {
 		}
 		// handle by delegate, so not return
 	case tea.KeyPressMsg:
-		switch msg.String() {
-		case "enter":
+		if key.Matches(msg, t.hotkey.OpenCommentsView) {
 			index := t.model.Index()
 			if index < 0 || index >= len(t.model.Items()) {
 				return t, nil

@@ -2,8 +2,8 @@ package ui
 
 import "github.com/lakerszhy/thn/domain"
 
-type commentTree struct {
-	rootID int64
+type commentsTree struct {
+	itemID int64
 
 	roots []int64
 	nodes map[int64]*commentNode
@@ -34,29 +34,29 @@ type commentFetchRequest struct {
 	ok       bool
 }
 
-func newCommentTree(rootID int64) *commentTree {
-	return &commentTree{
-		rootID: rootID,
+func newCommentsTree(itemID int64) *commentsTree {
+	return &commentsTree{
+		itemID: itemID,
 		nodes:  make(map[int64]*commentNode),
 	}
 }
 
-func (t *commentTree) RootCount() int {
+func (t *commentsTree) RootCount() int {
 	return len(t.roots)
 }
 
-func (t *commentTree) SelectedID() int64 {
+func (t *commentsTree) SelectedID() int64 {
 	return t.selectedID
 }
 
-func (t *commentTree) Node(id int64) *commentNode {
+func (t *commentsTree) Node(id int64) *commentNode {
 	return t.nodes[id]
 }
 
-func (t *commentTree) SetRoots(comments []domain.Comment) {
+func (t *commentsTree) SetRoots(comments []domain.Comment) {
 	t.roots = t.roots[:0]
 	for _, comment := range comments {
-		t.upsertComment(comment, t.rootID)
+		t.upsertComment(comment, t.itemID)
 		t.roots = append(t.roots, comment.ID)
 	}
 
@@ -66,14 +66,14 @@ func (t *commentTree) SetRoots(comments []domain.Comment) {
 	t.rebuildVisible()
 }
 
-func (t *commentTree) StartLoading(parentID int64) {
+func (t *commentsTree) StartLoading(parentID int64) {
 	if node := t.nodes[parentID]; node != nil {
 		node.loading = true
 		node.err = nil
 	}
 }
 
-func (t *commentTree) SetChildren(parentID int64, comments []domain.Comment) {
+func (t *commentsTree) SetChildren(parentID int64, comments []domain.Comment) {
 	parent := t.nodes[parentID]
 	if parent == nil {
 		return
@@ -90,14 +90,14 @@ func (t *commentTree) SetChildren(parentID int64, comments []domain.Comment) {
 	t.rebuildVisible()
 }
 
-func (t *commentTree) FailLoading(parentID int64, err error) {
+func (t *commentsTree) FailLoading(parentID int64, err error) {
 	if node := t.nodes[parentID]; node != nil {
 		node.loading = false
 		node.err = err
 	}
 }
 
-func (t *commentTree) ToggleSelected() commentFetchRequest {
+func (t *commentsTree) ToggleSelected() commentFetchRequest {
 	node := t.nodes[t.selectedID]
 	if node == nil || len(node.comment.KIDs) == 0 {
 		return commentFetchRequest{}
@@ -122,7 +122,7 @@ func (t *commentTree) ToggleSelected() commentFetchRequest {
 	}
 }
 
-func (t *commentTree) SelectVisible(delta int) {
+func (t *commentsTree) SelectVisible(delta int) {
 	t.rebuildVisible()
 
 	index := t.visibleIndex(t.selectedID)
@@ -138,16 +138,16 @@ func (t *commentTree) SelectVisible(delta int) {
 	t.selectedID = t.visible[index].id
 }
 
-func (t *commentTree) SelectParent() {
+func (t *commentsTree) SelectParent() {
 	node := t.nodes[t.selectedID]
-	if node == nil || node.parentID == t.rootID {
+	if node == nil || node.parentID == t.itemID {
 		return
 	}
 
 	t.selectedID = node.parentID
 }
 
-func (t *commentTree) SelectSibling(delta int) {
+func (t *commentsTree) SelectSibling(delta int) {
 	node := t.nodes[t.selectedID]
 	if node == nil {
 		return
@@ -173,25 +173,25 @@ func (t *commentTree) SelectSibling(delta int) {
 	}
 }
 
-func (t *commentTree) SelectFirst() {
+func (t *commentsTree) SelectFirst() {
 	t.rebuildVisible()
 	if len(t.visible) > 0 {
 		t.selectedID = t.visible[0].id
 	}
 }
 
-func (t *commentTree) SelectLast() {
+func (t *commentsTree) SelectLast() {
 	t.rebuildVisible()
 	if len(t.visible) > 0 {
 		t.selectedID = t.visible[len(t.visible)-1].id
 	}
 }
 
-func (t *commentTree) Visible() []visibleComment {
+func (t *commentsTree) Visible() []visibleComment {
 	return t.visible
 }
 
-func (t *commentTree) SetVisibleLine(id int64, line int) {
+func (t *commentsTree) SetVisibleLine(id int64, line int) {
 	for i := range t.visible {
 		if t.visible[i].id == id {
 			t.visible[i].line = line
@@ -200,7 +200,7 @@ func (t *commentTree) SetVisibleLine(id int64, line int) {
 	}
 }
 
-func (t *commentTree) HasLoading() bool {
+func (t *commentsTree) HasLoading() bool {
 	for _, node := range t.nodes {
 		if node.loading {
 			return true
@@ -209,7 +209,7 @@ func (t *commentTree) HasLoading() bool {
 	return false
 }
 
-func (t *commentTree) upsertComment(comment domain.Comment, parentID int64) {
+func (t *commentsTree) upsertComment(comment domain.Comment, parentID int64) {
 	node, ok := t.nodes[comment.ID]
 	if !ok {
 		t.nodes[comment.ID] = &commentNode{
@@ -223,14 +223,14 @@ func (t *commentTree) upsertComment(comment domain.Comment, parentID int64) {
 	node.parentID = parentID
 }
 
-func (t *commentTree) rebuildVisible() {
+func (t *commentsTree) rebuildVisible() {
 	t.visible = t.visible[:0]
 	for _, id := range t.roots {
 		t.appendVisible(id, 0)
 	}
 }
 
-func (t *commentTree) appendVisible(id int64, depth int) {
+func (t *commentsTree) appendVisible(id int64, depth int) {
 	node := t.nodes[id]
 	if node == nil {
 		return
@@ -246,7 +246,7 @@ func (t *commentTree) appendVisible(id int64, depth int) {
 	}
 }
 
-func (t *commentTree) visibleIndex(id int64) int {
+func (t *commentsTree) visibleIndex(id int64) int {
 	for i, visible := range t.visible {
 		if visible.id == id {
 			return i

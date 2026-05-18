@@ -28,7 +28,7 @@ type commentsView struct {
 	converter *converter.Converter
 	msg       commentsMsg
 	spinner   spinner.Model
-	tree      *commentTree
+	tree      *commentsTree
 }
 
 func newCommentsView(item domain.Item, client *hn.Client, theme config.Theme, hotkey config.Hotkey) *commentsView {
@@ -53,7 +53,7 @@ func newCommentsView(item domain.Item, client *hn.Client, theme config.Theme, ho
 		model:     vp,
 		converter: converter,
 		spinner:   s,
-		tree:      newCommentTree(item.ID),
+		tree:      newCommentsTree(item.ID),
 	}
 }
 

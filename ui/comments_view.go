@@ -229,12 +229,6 @@ func (c *commentsView) renderCommentHeader(node *commentNode, depth int) string 
 	}
 
 	desc := fmt.Sprintf("%s %s", node.comment.By, node.comment.TimeAgo())
-	if node.comment.Deleted {
-		desc = "deleted"
-	}
-	if node.comment.Dead {
-		desc = "dead"
-	}
 	if len(node.comment.KIDs) > 0 {
 		desc = fmt.Sprintf("%s [%d]", desc, len(node.comment.KIDs))
 	}
@@ -248,8 +242,14 @@ func (c *commentsView) renderCommentHeader(node *commentNode, depth int) string 
 }
 
 func (c *commentsView) renderCommentBody(comment domain.Comment, depth int) string {
-	content := "[deleted]"
-	if !comment.Deleted && !comment.Dead {
+	var content string
+
+	switch {
+	case comment.Deleted:
+		content = "[deleted]"
+	case comment.Dead:
+		content = "[dead]"
+	default:
 		var err error
 		content, err = c.converter.ConvertString(comment.Text)
 		if err != nil {
@@ -257,6 +257,7 @@ func (c *commentsView) renderCommentBody(comment domain.Comment, depth int) stri
 		}
 		content = strings.TrimSpace(content)
 	}
+
 	if content == "" {
 		content = "[empty]"
 	}

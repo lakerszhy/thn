@@ -321,5 +321,17 @@ func (c *commentsView) onKeyPressMsg(msg tea.KeyPressMsg) (*commentsView, tea.Cm
 		return c, nil
 	}
 
+	if key.Matches(msg, c.hotkey.GoToStart) {
+		c.tree.SelectFirst()
+		c.render()
+		return c, nil
+	}
+
+	if key.Matches(msg, c.hotkey.GoToEnd) {
+		c.tree.SelectLast()
+		c.render()
+		return c, nil
+	}
+
 	return c, nil
 }

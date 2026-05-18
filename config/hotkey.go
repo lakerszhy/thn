@@ -10,8 +10,6 @@ var Hotkeys = Hotkey{
 	NextItem:         key.NewBinding(key.WithKeys("down", "j")),
 	PrevPage:         key.NewBinding(key.WithKeys("left", "h")),
 	NextPage:         key.NewBinding(key.WithKeys("right", "l")),
-	GoToStart:        key.NewBinding(key.WithKeys("home", "g")),
-	GoToEnd:          key.NewBinding(key.WithKeys("end", "G")),
 	OpenCommentsView: key.NewBinding(key.WithKeys("enter", "space")),
 
 	CloseCommentsView:  key.NewBinding(key.WithKeys("esc")),
@@ -22,7 +20,9 @@ var Hotkeys = Hotkey{
 	PrevSiblingComment: key.NewBinding(key.WithKeys("p")),
 	NextSiblingComment: key.NewBinding(key.WithKeys("n")),
 
-	Quit: key.NewBinding(key.WithKeys("ctrl+c", "q")),
+	GoToStart: key.NewBinding(key.WithKeys("home", "g")),
+	GoToEnd:   key.NewBinding(key.WithKeys("end", "G")),
+	Quit:      key.NewBinding(key.WithKeys("ctrl+c", "q")),
 }
 
 type Hotkey struct {
@@ -33,8 +33,6 @@ type Hotkey struct {
 	NextItem         key.Binding
 	PrevPage         key.Binding
 	NextPage         key.Binding
-	GoToStart        key.Binding
-	GoToEnd          key.Binding
 	OpenCommentsView key.Binding
 
 	CloseCommentsView  key.Binding
@@ -45,5 +43,7 @@ type Hotkey struct {
 	PrevSiblingComment key.Binding
 	NextSiblingComment key.Binding
 
-	Quit key.Binding
+	GoToStart key.Binding
+	GoToEnd   key.Binding
+	Quit      key.Binding
 }

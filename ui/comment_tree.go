@@ -173,6 +173,20 @@ func (t *commentTree) SelectSibling(delta int) {
 	}
 }
 
+func (t *commentTree) SelectFirst() {
+	t.rebuildVisible()
+	if len(t.visible) > 0 {
+		t.selectedID = t.visible[0].id
+	}
+}
+
+func (t *commentTree) SelectLast() {
+	t.rebuildVisible()
+	if len(t.visible) > 0 {
+		t.selectedID = t.visible[len(t.visible)-1].id
+	}
+}
+
 func (t *commentTree) Visible() []visibleComment {
 	return t.visible
 }

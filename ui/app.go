@@ -24,17 +24,20 @@ type app struct {
 	theme  config.Theme
 	hotkey config.Hotkey
 
-	itemsViewStyle lipgloss.Style
-	windowWidth    int
-	windowHeight   int
+	itemsViewStyle    lipgloss.Style
+	commentsViewStyle lipgloss.Style
+
+	windowWidth  int
+	windowHeight int
 }
 
 func NewApp(client *hn.Client, theme config.Theme, hotkey config.Hotkey) *app {
 	return &app{
-		client:         client,
-		theme:          theme,
-		hotkey:         hotkey,
-		itemsViewStyle: lipgloss.NewStyle().Border(theme.TitleBar.Border.Style),
+		client:            client,
+		theme:             theme,
+		hotkey:            hotkey,
+		itemsViewStyle:    lipgloss.NewStyle().Border(theme.TitleBar.Border.Style),
+		commentsViewStyle: lipgloss.NewStyle().Border(theme.Comment.Border.Style),
 		categories: []domain.Category{
 			domain.CategoryTop,
 			domain.CategoryNew,
@@ -69,6 +72,7 @@ func (a *app) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		a.windowWidth = msg.Width
 		a.windowHeight = msg.Height
 		a.itemsViewStyle = a.itemsViewStyle.Height(a.windowHeight).Width(a.windowWidth)
+		a.commentsViewStyle = a.commentsViewStyle.Height(a.windowHeight)
 		a.updateSize()
 		return a, nil
 	case tea.KeyPressMsg:
@@ -108,10 +112,15 @@ func (a *app) View() tea.View {
 	content = style.Render(content)
 
 	if a.commentsView != nil {
+		commentsStyle := a.commentsViewStyle.BorderForeground(a.theme.Comment.Border.Color)
+		if !a.focusOnItemsView {
+			commentsStyle = a.commentsViewStyle.BorderForeground(a.theme.Comment.Border.FocusColor)
+		}
+
 		content = lipgloss.JoinHorizontal(
 			lipgloss.Top,
 			content,
-			a.commentsView.View(),
+			commentsStyle.Render(a.commentsView.View()),
 		)
 	}
 
@@ -133,21 +142,25 @@ func (a *app) updateCurrentCategory(index int) tea.Cmd {
 
 func (a *app) updateSize() {
 	itemsWidth := a.windowWidth
-	commentsWidth := 0
 
 	if a.commentsView != nil {
 		itemsWidth /= 3
-		commentsWidth = a.windowWidth - itemsWidth
-		a.commentsView.setSize(commentsWidth, a.windowHeight)
+		commentsWidth := a.windowWidth - itemsWidth
+
+		a.commentsViewStyle = a.commentsViewStyle.Width(commentsWidth)
+		commentsInnerWidth := commentsWidth - a.commentsViewStyle.GetHorizontalFrameSize()
+		commentsInnerHeight := a.windowHeight - a.commentsViewStyle.GetVerticalFrameSize()
+		a.commentsView.setSize(commentsInnerWidth, commentsInnerHeight)
 	}
 
 	a.itemsViewStyle = a.itemsViewStyle.Width(itemsWidth)
 
 	// 2 for category bar
 	itemsHeight := a.windowHeight - a.itemsViewStyle.GetVerticalBorderSize() - 2
+	itemsWidth = itemsWidth - a.itemsViewStyle.GetHorizontalFrameSize()
 
 	for _, v := range a.views {
-		v.setSize(itemsWidth-a.itemsViewStyle.GetHorizontalFrameSize(), itemsHeight)
+		v.setSize(itemsWidth, itemsHeight)
 	}
 }
 

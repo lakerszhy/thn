@@ -9,28 +9,33 @@ import (
 var HackerNewsTheme = Theme{
 	TitleBar: TitleBarTheme{
 		Border: BorderTheme{
-			Style:      lipgloss.RoundedBorder(),  // 圆角边框更有现代感
-			Color:      lipgloss.Color("#6E6E6E"), // 未激活时暗灰边框
-			FocusColor: lipgloss.Color("#FF6600"), // 激活/聚焦时 HN 橙色边框
+			Style:      lipgloss.RoundedBorder(),
+			Color:      lipgloss.Color("#6E6E6E"),
+			FocusColor: lipgloss.Color("#FF6600"),
 		},
-		CategoryColor:         lipgloss.Color("#B4B4B4"), // 浅灰导航
-		CategorySelectedColor: lipgloss.Color("#FF6600"), // 选中分类变橙
+		CategoryColor:         lipgloss.Color("#B4B4B4"),
+		CategorySelectedColor: lipgloss.Color("#FF6600"),
 		DivideColor:           lipgloss.Color("#8C8C8C"),
 	},
 
 	Item: ItemTheme{
-		TitleColor:          lipgloss.Color("#E6E6E6"), // 亮白/浅灰标题，护眼
-		TitleSelectedColor:  lipgloss.Color("#FF6600"), // 选中行变橙色
-		DomainColor:         lipgloss.Color("#8C8C8C"), // 暗灰域名
-		DomainSelectedColor: lipgloss.Color("#a54301"), // 选中行域名变成过渡橙灰
-		DescColor:           lipgloss.Color("#8C8C8C"), // 灰色次要信息
-		DescSelectedColor:   lipgloss.Color("#a54301"), // 选中行次要信息变亮
+		TitleColor:          lipgloss.Color("#E6E6E6"),
+		TitleSelectedColor:  lipgloss.Color("#FF6600"),
+		DomainColor:         lipgloss.Color("#8C8C8C"),
+		DomainSelectedColor: lipgloss.Color("#A54301"),
+		DescColor:           lipgloss.Color("#8C8C8C"),
+		DescSelectedColor:   lipgloss.Color("#A54301"),
 	},
 
 	Comment: CommentTheme{
-		DescColor:         lipgloss.Color("#8C8C8C"), // 评论区作者与时间
+		Border: BorderTheme{
+			Style:      lipgloss.RoundedBorder(),
+			Color:      lipgloss.Color("#6E6E6E"),
+			FocusColor: lipgloss.Color("#FF6600"),
+		},
+		DescColor:         lipgloss.Color("#8C8C8C"),
 		DescSelectedColor: lipgloss.Color("#FF6600"),
-		ContentColor:      lipgloss.Color("#E6E6E6"), // 评论正文
+		ContentColor:      lipgloss.Color("#E6E6E6"),
 	},
 }
 
@@ -57,6 +62,7 @@ type ItemTheme struct {
 }
 
 type CommentTheme struct {
+	Border            BorderTheme
 	DescColor         color.Color
 	DescSelectedColor color.Color
 	ContentColor      color.Color

@@ -186,10 +186,12 @@ func (t itemsView) fetchMore() tea.Cmd {
 type itemDeletage struct {
 	theme config.Theme
 
-	normalTitle   lipgloss.Style
-	selectedTitle lipgloss.Style
-	normalDesc    lipgloss.Style
-	selectedDesc  lipgloss.Style
+	normalTitle    lipgloss.Style
+	selectedTitle  lipgloss.Style
+	normalDesc     lipgloss.Style
+	selectedDesc   lipgloss.Style
+	normalDomain   lipgloss.Style
+	selectedDomain lipgloss.Style
 
 	ellipsis string
 
@@ -201,11 +203,13 @@ func newItemDeletage(t config.Theme) *itemDeletage {
 	desc := lipgloss.NewStyle().PaddingLeft(6)
 	return &itemDeletage{
 		// 1 for ">"
-		normalTitle:   lipgloss.NewStyle().PaddingLeft(1).Foreground(t.ItemColor),
-		normalDesc:    desc.Foreground(t.ItemColor).Faint(true),
-		selectedTitle: lipgloss.NewStyle().Foreground(t.ItemSelectedColor),
-		selectedDesc:  desc.Foreground(t.ItemSelectedColor).Faint(true),
-		ellipsis:      "...",
+		normalTitle:    lipgloss.NewStyle().PaddingLeft(1).Foreground(t.Item.TitleColor),
+		normalDesc:     desc.Foreground(t.Item.DescColor),
+		selectedTitle:  lipgloss.NewStyle().Foreground(t.Item.TitleSelectedColor),
+		selectedDesc:   desc.Foreground(t.Item.DescSelectedColor),
+		normalDomain:   desc.Foreground(t.Item.DomainColor),
+		selectedDomain: desc.Foreground(t.Item.DomainSelectedColor),
+		ellipsis:       "...",
 	}
 }
 
@@ -237,11 +241,11 @@ func (d itemDeletage) Render(w io.Writer, m list.Model, index int, item list.Ite
 
 	if selected {
 		title = d.selectedTitle.Render(">" + title)
-		domain = d.selectedTitle.Faint(true).UnsetPadding().Render(domain)
+		domain = d.selectedDomain.UnsetPadding().Render(domain)
 		desc = d.selectedDesc.Render(desc)
 	} else {
 		title = d.normalTitle.Render(title)
-		domain = d.normalDesc.UnsetPadding().Render(domain)
+		domain = d.normalDomain.UnsetPadding().Render(domain)
 		desc = d.normalDesc.Render(desc)
 	}
 

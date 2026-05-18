@@ -266,7 +266,7 @@ func (c *commentsView) renderCommentHeader(node *commentNode, depth int) string 
 	header := fmt.Sprintf("%s%s %s", strings.Repeat("  ", depth), marker, desc)
 	style := lipgloss.NewStyle().Foreground(c.theme.CommentDescColor).Faint(true)
 	if node.comment.ID == c.tree.SelectedID() {
-		style = style.Foreground(c.theme.ItemSelectedColor).Faint(false).Bold(true)
+		style = style.Foreground(c.theme.Item.TitleSelectedColor).Faint(false).Bold(true)
 	}
 	return style.Render(header)
 }

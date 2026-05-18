@@ -3,6 +3,7 @@ package ui
 import (
 	"context"
 	"fmt"
+	"html"
 	"strings"
 
 	"charm.land/bubbles/v2/key"
@@ -256,6 +257,7 @@ func (c *commentsView) renderCommentBody(comment domain.Comment, depth int) stri
 			content = comment.Text
 		}
 		content = strings.TrimSpace(content)
+		content = html.UnescapeString(content)
 	}
 
 	if content == "" {

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"charm.land/bubbles/v2/key"
 	"charm.land/bubbles/v2/spinner"
 	"charm.land/bubbles/v2/viewport"
 	tea "charm.land/bubbletea/v2"
@@ -21,6 +22,7 @@ type commentsView struct {
 	item      domain.Item
 	client    *hn.Client
 	theme     config.Theme
+	hotkey    config.Hotkey
 	model     viewport.Model
 	converter *converter.Converter
 	msg       commentsMsg
@@ -28,7 +30,7 @@ type commentsView struct {
 	tree      *commentTree
 }
 
-func newCommentsView(item domain.Item, client *hn.Client, theme config.Theme) *commentsView {
+func newCommentsView(item domain.Item, client *hn.Client, theme config.Theme, hotkey config.Hotkey) *commentsView {
 	converter := converter.NewConverter(
 		converter.WithPlugins(
 			base.NewBasePlugin(),
@@ -46,6 +48,7 @@ func newCommentsView(item domain.Item, client *hn.Client, theme config.Theme) *c
 		item:      item,
 		client:    client,
 		theme:     theme,
+		hotkey:    hotkey,
 		model:     vp,
 		converter: converter,
 		spinner:   s,
@@ -82,35 +85,8 @@ func (c *commentsView) Update(msg tea.Msg) (*commentsView, tea.Cmd) {
 		}
 		return c, nil
 	case tea.KeyPressMsg:
-		switch msg.String() {
-		case "enter", " ", "space", "right", "l":
-			req := c.tree.ToggleSelected()
-			c.render()
-			if req.ok {
-				return c, c.fetchChildren(req.parentID, req.ids)
-			}
-			return c, nil
-		case "left", "h", "u":
-			c.tree.SelectParent()
-			c.render()
-			return c, nil
-		case "up", "k":
-			c.tree.SelectVisible(-1)
-			c.render()
-			return c, nil
-		case "down", "j":
-			c.tree.SelectVisible(1)
-			c.render()
-			return c, nil
-		case "shift+up", "K", "p":
-			c.tree.SelectSibling(-1)
-			c.render()
-			return c, nil
-		case "shift+down", "J", "n":
-			c.tree.SelectSibling(1)
-			c.render()
-			return c, nil
-		}
+		c, cmd = c.onKeyPressMsg(msg)
+		return c, cmd
 	}
 
 	c.model, cmd = c.model.Update(msg)
@@ -303,4 +279,47 @@ func (c *commentsView) ensureSelectedVisible() {
 
 func (c *commentsView) hasLoadingComments() bool {
 	return c.msg.state == stateLoading || c.tree.HasLoading()
+}
+
+func (c *commentsView) onKeyPressMsg(msg tea.KeyPressMsg) (*commentsView, tea.Cmd) {
+	if key.Matches(msg, c.hotkey.ToggleSubComments) {
+		req := c.tree.ToggleSelected()
+		c.render()
+		if req.ok {
+			return c, c.fetchChildren(req.parentID, req.ids)
+		}
+		return c, nil
+	}
+
+	if key.Matches(msg, c.hotkey.SelectParent) {
+		c.tree.SelectParent()
+		c.render()
+		return c, nil
+	}
+
+	if key.Matches(msg, c.hotkey.PrevComment) {
+		c.tree.SelectVisible(-1)
+		c.render()
+		return c, nil
+	}
+
+	if key.Matches(msg, c.hotkey.NextComment) {
+		c.tree.SelectVisible(1)
+		c.render()
+		return c, nil
+	}
+
+	if key.Matches(msg, c.hotkey.PrevSiblingComment) {
+		c.tree.SelectSibling(-1)
+		c.render()
+		return c, nil
+	}
+
+	if key.Matches(msg, c.hotkey.NextSiblingComment) {
+		c.tree.SelectSibling(1)
+		c.render()
+		return c, nil
+	}
+
+	return c, nil
 }

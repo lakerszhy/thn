@@ -89,6 +89,15 @@ func (c *Client) FetchComments(ctx context.Context, ids []int64) ([]domain.Comme
 	return comments, nil
 }
 
+func (c *Client) FetchItem(ctx context.Context, id int64) (domain.Item, error) {
+	item, err := c.fetchItem(ctx, id)
+	if err != nil {
+		return domain.Item{}, err
+	}
+
+	return item.ToDomain(), nil
+}
+
 func (c *Client) fetchIDs(ctx context.Context, cat category) ([]int64, error) {
 	if err := c.acquire(ctx); err != nil {
 		return nil, err

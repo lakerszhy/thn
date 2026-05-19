@@ -10,13 +10,15 @@ import (
 	"github.com/lakerszhy/thn/config"
 	"github.com/lakerszhy/thn/domain"
 	"github.com/lakerszhy/thn/hn"
+	"github.com/lakerszhy/thn/ui/comments"
+	"github.com/lakerszhy/thn/ui/items"
 )
 
 type app struct {
 	categories       []domain.Category
 	current          domain.Category
-	views            map[domain.Category]*itemsView
-	commentsView     *commentsView
+	itemsViews       map[domain.Category]*items.View
+	commentsView     *comments.View
 	focusOnItemsView bool
 
 	client *hn.Client
@@ -48,24 +50,24 @@ func NewApp(client *hn.Client, theme config.Theme, hotkey config.Hotkey) *app {
 		},
 		focusOnItemsView: true,
 		current:          domain.CategoryTop,
-		views: map[domain.Category]*itemsView{
-			domain.CategoryTop: newItemsView(domain.CategoryTop, client, theme, hotkey),
+		itemsViews: map[domain.Category]*items.View{
+			domain.CategoryTop: items.NewView(domain.CategoryTop, client, theme, hotkey),
 		},
 	}
 }
 
 func (a *app) Init() tea.Cmd {
-	return a.views[a.current].Init()
+	return a.itemsViews[a.current].Init()
 }
 
 func (a *app) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 
 	switch msg := msg.(type) {
-	case itemSelectedMsg:
+	case items.ItemSelectedMsg:
 		// TODO: how to handle when item has no comments
 		a.focusOnItemsView = false
-		a.commentsView = newCommentsView(domain.Item(msg).ID, a.client, a.theme, a.hotkey)
+		a.commentsView = comments.NewView(domain.Item(msg).ID, a.client, a.theme, a.hotkey)
 		a.updateSize()
 		return a, a.commentsView.Init()
 	case tea.WindowSizeMsg:
@@ -81,8 +83,8 @@ func (a *app) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	var cmds []tea.Cmd
 
-	for i := range a.views {
-		a.views[i], cmd = a.views[i].Update(msg)
+	for i := range a.itemsViews {
+		a.itemsViews[i], cmd = a.itemsViews[i].Update(msg)
 		cmds = append(cmds, cmd)
 	}
 
@@ -102,7 +104,7 @@ func (a *app) View() tea.View {
 	content := lipgloss.JoinVertical(
 		lipgloss.Left,
 		a.renderCategories(),
-		a.views[a.current].View(),
+		a.itemsViews[a.current].View(),
 	)
 
 	style := a.itemsViewStyle.BorderForeground(a.theme.TitleBar.Border.FocusColor)
@@ -131,10 +133,10 @@ func (a *app) View() tea.View {
 func (a *app) updateCurrentCategory(index int) tea.Cmd {
 	a.current = a.categories[index]
 
-	if _, ok := a.views[a.current]; !ok {
-		a.views[a.current] = newItemsView(a.current, a.client, a.theme, a.hotkey)
+	if _, ok := a.itemsViews[a.current]; !ok {
+		a.itemsViews[a.current] = items.NewView(a.current, a.client, a.theme, a.hotkey)
 		a.updateSize()
-		return a.views[a.current].Init()
+		return a.itemsViews[a.current].Init()
 	}
 
 	return nil
@@ -150,7 +152,7 @@ func (a *app) updateSize() {
 		a.commentsViewStyle = a.commentsViewStyle.Width(commentsWidth)
 		commentsInnerWidth := commentsWidth - a.commentsViewStyle.GetHorizontalFrameSize()
 		commentsInnerHeight := a.windowHeight - a.commentsViewStyle.GetVerticalFrameSize()
-		a.commentsView.setSize(commentsInnerWidth, commentsInnerHeight)
+		a.commentsView.SetSize(commentsInnerWidth, commentsInnerHeight)
 	}
 
 	a.itemsViewStyle = a.itemsViewStyle.Width(itemsWidth)
@@ -159,8 +161,8 @@ func (a *app) updateSize() {
 	itemsHeight := a.windowHeight - a.itemsViewStyle.GetVerticalBorderSize() - 2
 	itemsWidth = itemsWidth - a.itemsViewStyle.GetHorizontalFrameSize()
 
-	for _, v := range a.views {
-		v.setSize(itemsWidth, itemsHeight)
+	for _, v := range a.itemsViews {
+		v.SetSize(itemsWidth, itemsHeight)
 	}
 }
 
@@ -220,6 +222,6 @@ func (a *app) onKeyPressMsg(msg tea.KeyPressMsg) (*app, tea.Cmd) {
 		return a, cmd
 	}
 
-	a.views[a.current], cmd = a.views[a.current].Update(msg)
+	a.itemsViews[a.current], cmd = a.itemsViews[a.current].Update(msg)
 	return a, cmd
 }

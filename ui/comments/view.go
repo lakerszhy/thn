@@ -1,4 +1,4 @@
-package ui
+package comments
 
 import (
 	"context"
@@ -20,20 +20,22 @@ import (
 	"github.com/lakerszhy/thn/hn"
 )
 
-type commentsView struct {
-	itemID    int64
-	itemMsg   itemMsg
-	client    *hn.Client
-	theme     config.Theme
-	hotkey    config.Hotkey
+type View struct {
+	itemID int64
+	client *hn.Client
+	theme  config.Theme
+	hotkey config.Hotkey
+
 	model     viewport.Model
-	converter *converter.Converter
-	msg       commentsMsg
 	spinner   spinner.Model
-	tree      *commentsTree
+	converter *converter.Converter
+
+	msg     commentsMsg
+	itemMsg itemMsg
+	tree    *tree
 }
 
-func newCommentsView(itemID int64, client *hn.Client, theme config.Theme, hotkey config.Hotkey) *commentsView {
+func NewView(itemID int64, client *hn.Client, theme config.Theme, hotkey config.Hotkey) *View {
 	converter := converter.NewConverter(
 		converter.WithPlugins(
 			base.NewBasePlugin(),
@@ -47,7 +49,7 @@ func newCommentsView(itemID int64, client *hn.Client, theme config.Theme, hotkey
 	s := spinner.New()
 	s.Spinner = spinner.Dot
 
-	return &commentsView{
+	return &View{
 		itemID:    itemID,
 		client:    client,
 		theme:     theme,
@@ -55,18 +57,18 @@ func newCommentsView(itemID int64, client *hn.Client, theme config.Theme, hotkey
 		model:     vp,
 		converter: converter,
 		spinner:   s,
-		tree:      newCommentsTree(itemID),
+		tree:      newTree(itemID),
 	}
 }
 
-func (c *commentsView) Init() tea.Cmd {
+func (c *View) Init() tea.Cmd {
 	return tea.Batch(
 		c.spinner.Tick,
 		c.fetchItem(),
 	)
 }
 
-func (c *commentsView) Update(msg tea.Msg) (*commentsView, tea.Cmd) {
+func (c *View) Update(msg tea.Msg) (*View, tea.Cmd) {
 	var cmd tea.Cmd
 
 	switch msg := msg.(type) {
@@ -94,7 +96,7 @@ func (c *commentsView) Update(msg tea.Msg) (*commentsView, tea.Cmd) {
 
 		c.msg = msg
 		c.applyCommentsMsg(msg)
-		if msg.state == stateLoadingMore {
+		if msg.state == stateLoadingChildren {
 			return c, c.spinner.Tick
 		}
 		return c, nil
@@ -107,7 +109,7 @@ func (c *commentsView) Update(msg tea.Msg) (*commentsView, tea.Cmd) {
 	return c, cmd
 }
 
-func (c *commentsView) View() string {
+func (c *View) View() string {
 	if c.itemMsg.state == stateLoadFailed {
 		return lipgloss.NewStyle().Align(lipgloss.Center).Width(c.model.Width()).
 			Render(fmt.Sprintf("Load Item Failed: %s", c.itemMsg.err.Error()))
@@ -121,14 +123,14 @@ func (c *commentsView) View() string {
 	return c.model.View()
 }
 
-func (c *commentsView) setSize(width, height int) {
+func (c *View) SetSize(width, height int) {
 	c.model.SetHeight(height)
 	c.model.SetWidth(width)
 	c.render()
 	c.ensureSelectedVisible()
 }
 
-func (c *commentsView) fetchItem() tea.Cmd {
+func (c *View) fetchItem() tea.Cmd {
 	var cmds []tea.Cmd
 
 	cmd := func() tea.Msg {
@@ -148,7 +150,7 @@ func (c *commentsView) fetchItem() tea.Cmd {
 	return tea.Batch(cmds...)
 }
 
-func (c commentsView) fetchComments() tea.Cmd {
+func (c View) fetchComments() tea.Cmd {
 	if c.itemMsg.state != stateLoadSuccess {
 		return nil
 	}
@@ -172,7 +174,7 @@ func (c commentsView) fetchComments() tea.Cmd {
 	return tea.Batch(cmds...)
 }
 
-func (c commentsView) fetchChildren(parentID int64, ids []int64) tea.Cmd {
+func (c View) fetchChildren(parentID int64, ids []int64) tea.Cmd {
 	if c.itemMsg.state != stateLoadSuccess {
 		return nil
 	}
@@ -180,23 +182,23 @@ func (c commentsView) fetchChildren(parentID int64, ids []int64) tea.Cmd {
 	var cmds []tea.Cmd
 
 	cmd := func() tea.Msg {
-		return newCommentChildrenLoadingMsg(c.itemMsg.item, parentID)
+		return newCommentsLoadingChildrenMsg(c.itemMsg.item, parentID)
 	}
 	cmds = append(cmds, cmd)
 
 	cmd = func() tea.Msg {
 		items, err := c.client.FetchComments(context.Background(), ids)
 		if err != nil {
-			return newCommentChildrenLoadFailedMsg(c.itemMsg.item, parentID, err)
+			return newCommentsLoadChildrenFailedMsg(c.itemMsg.item, parentID, err)
 		}
-		return newCommentChildrenLoadSuccessMsg(c.itemMsg.item, parentID, items)
+		return newCommentsLoadChildrenSuccessMsg(c.itemMsg.item, parentID, items)
 	}
 	cmds = append(cmds, cmd)
 
 	return tea.Batch(cmds...)
 }
 
-func (c *commentsView) applyCommentsMsg(msg commentsMsg) {
+func (c *View) applyCommentsMsg(msg commentsMsg) {
 	if msg.parentID == c.itemID {
 		switch msg.state {
 		case stateLoading:
@@ -213,11 +215,11 @@ func (c *commentsView) applyCommentsMsg(msg commentsMsg) {
 	}
 
 	switch msg.state {
-	case stateLoadingMore:
+	case stateLoadingChildren:
 		c.tree.StartLoading(msg.parentID)
-	case stateLoadMoreSuccess:
+	case stateLoadChildrenSuccess:
 		c.tree.SetChildren(msg.parentID, msg.comments)
-	case stateLoadMoreFailed:
+	case stateLoadChildrenFailed:
 		c.tree.FailLoading(msg.parentID, msg.err)
 	}
 
@@ -225,7 +227,8 @@ func (c *commentsView) applyCommentsMsg(msg commentsMsg) {
 	c.ensureSelectedVisible()
 }
 
-func (c *commentsView) itemDomain() string {
+// TODO: should be moved to domain
+func (c *View) itemDomain() string {
 	if c.itemMsg.state != stateLoadSuccess {
 		return ""
 	}
@@ -252,7 +255,7 @@ func (c *commentsView) itemDomain() string {
 	return host
 }
 
-func (c *commentsView) renderItemHeader() string {
+func (c *View) renderItemHeader() string {
 	if c.itemMsg.state != stateLoadSuccess {
 		return ""
 	}
@@ -311,7 +314,7 @@ func (c *commentsView) renderItemHeader() string {
 	return s.String()
 }
 
-func (c *commentsView) render() {
+func (c *View) render() {
 	if c.itemMsg.state != stateLoadSuccess {
 		return
 	}
@@ -359,14 +362,14 @@ func (c *commentsView) render() {
 	c.model.SetContent(strings.TrimRight(s.String(), "\n"))
 }
 
-func (c *commentsView) appendLines(s *strings.Builder, line *int, lines ...string) {
+func (c *View) appendLines(s *strings.Builder, line *int, lines ...string) {
 	for _, text := range lines {
 		fmt.Fprintln(s, text)
 		*line += strings.Count(text, "\n") + 1
 	}
 }
 
-func (c *commentsView) renderCommentHeader(node *commentNode, depth int) string {
+func (c *View) renderCommentHeader(node *node, depth int) string {
 	marker := " "
 	if len(node.comment.KIDs) > 0 {
 		marker = "+"
@@ -388,7 +391,7 @@ func (c *commentsView) renderCommentHeader(node *commentNode, depth int) string 
 	return style.Render(header)
 }
 
-func (c *commentsView) renderCommentBody(comment domain.Comment, depth int) string {
+func (c *View) renderCommentBody(comment domain.Comment, depth int) string {
 	var content string
 
 	switch {
@@ -417,7 +420,7 @@ func (c *commentsView) renderCommentBody(comment domain.Comment, depth int) stri
 		Render(content)
 }
 
-func (c *commentsView) ensureSelectedVisible() {
+func (c *View) ensureSelectedVisible() {
 	visibleList := c.tree.Visible()
 	for i, visible := range visibleList {
 		if visible.id == c.tree.SelectedID() {
@@ -431,11 +434,11 @@ func (c *commentsView) ensureSelectedVisible() {
 	}
 }
 
-func (c *commentsView) hasLoadingComments() bool {
+func (c *View) hasLoadingComments() bool {
 	return c.msg.state == stateLoading || c.tree.HasLoading() || c.itemMsg.state == stateLoading
 }
 
-func (c *commentsView) onKeyPressMsg(msg tea.KeyPressMsg) (*commentsView, tea.Cmd) {
+func (c *View) onKeyPressMsg(msg tea.KeyPressMsg) (*View, tea.Cmd) {
 	if key.Matches(msg, c.hotkey.ToggleSubComments) {
 		req := c.tree.ToggleSelected()
 		c.render()

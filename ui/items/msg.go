@@ -1,0 +1,69 @@
+package items
+
+import "github.com/lakerszhy/thn/domain"
+
+const (
+	stateLoading = iota
+	stateLoadSuccess
+	stateLoadFailed
+	stateLoadingMore
+	stateLoadMoreSuccess
+	stateLoadMoreFailed
+)
+
+type state int
+
+type ItemSelectedMsg domain.Item
+
+type itemsMsg struct {
+	category domain.Category
+	items    []domain.Item
+	state    state
+	err      error
+}
+
+func newLoadingMsg(cat domain.Category) itemsMsg {
+	return itemsMsg{
+		state:    stateLoading,
+		category: cat,
+	}
+}
+
+func newLoadSuccessMsg(cat domain.Category, items []domain.Item) itemsMsg {
+	return itemsMsg{
+		state:    stateLoadSuccess,
+		category: cat,
+		items:    items,
+	}
+}
+
+func newLoadFailedMsg(cat domain.Category, err error) itemsMsg {
+	return itemsMsg{
+		state:    stateLoadFailed,
+		err:      err,
+		category: cat,
+	}
+}
+
+func newLoadingMoreMsg(cat domain.Category) itemsMsg {
+	return itemsMsg{
+		state:    stateLoadingMore,
+		category: cat,
+	}
+}
+
+func newLoadMoreSuccessMsg(cat domain.Category, items []domain.Item) itemsMsg {
+	return itemsMsg{
+		state:    stateLoadMoreSuccess,
+		category: cat,
+		items:    items,
+	}
+}
+
+func newLoadMoreFailedMsg(cat domain.Category, err error) itemsMsg {
+	return itemsMsg{
+		state:    stateLoadMoreFailed,
+		err:      err,
+		category: cat,
+	}
+}

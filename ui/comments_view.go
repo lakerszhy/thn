@@ -20,27 +20,17 @@ import (
 	"github.com/lakerszhy/thn/hn"
 )
 
-type itemLoadSuccessMsg struct {
-	item domain.Item
-}
-
-type itemLoadFailedMsg struct {
-	err error
-}
-
 type commentsView struct {
-	itemID      int64
-	item        domain.Item
-	itemLoaded  bool
-	itemLoadErr error
-	client      *hn.Client
-	theme       config.Theme
-	hotkey      config.Hotkey
-	model       viewport.Model
-	converter   *converter.Converter
-	msg         commentsMsg
-	spinner     spinner.Model
-	tree        *commentsTree
+	itemID    int64
+	itemMsg   itemMsg
+	client    *hn.Client
+	theme     config.Theme
+	hotkey    config.Hotkey
+	model     viewport.Model
+	converter *converter.Converter
+	msg       commentsMsg
+	spinner   spinner.Model
+	tree      *commentsTree
 }
 
 func newCommentsView(itemID int64, client *hn.Client, theme config.Theme, hotkey config.Hotkey) *commentsView {
@@ -80,16 +70,19 @@ func (c *commentsView) Update(msg tea.Msg) (*commentsView, tea.Cmd) {
 	var cmd tea.Cmd
 
 	switch msg := msg.(type) {
-	case itemLoadSuccessMsg:
-		c.item = msg.item
-		c.itemLoaded = true
-		c.render()
-		return c, c.fetchComments()
-	case itemLoadFailedMsg:
-		c.itemLoadErr = msg.err
+	case itemMsg:
+		if msg.itemID != c.itemID {
+			return c, nil
+		}
+
+		c.itemMsg = msg
+		if msg.state == stateLoadSuccess {
+			c.render()
+			return c, c.fetchComments()
+		}
 		return c, nil
 	case spinner.TickMsg:
-		if c.hasLoadingComments() || !c.itemLoaded {
+		if c.hasLoadingComments() {
 			c.spinner, cmd = c.spinner.Update(msg)
 			c.render()
 		}
@@ -115,10 +108,12 @@ func (c *commentsView) Update(msg tea.Msg) (*commentsView, tea.Cmd) {
 }
 
 func (c *commentsView) View() string {
-	if c.itemLoadErr != nil {
-		return fmt.Sprintf("Load Item Failed: %s", c.itemLoadErr.Error())
+	if c.itemMsg.state == stateLoadFailed {
+		return lipgloss.NewStyle().Align(lipgloss.Center).Width(c.model.Width()).
+			Render(fmt.Sprintf("Load Item Failed: %s", c.itemMsg.err.Error()))
 	}
-	if !c.itemLoaded {
+
+	if c.itemMsg.state != stateLoadSuccess {
 		return lipgloss.NewStyle().Align(lipgloss.Center).Width(c.model.Width()).
 			Render(fmt.Sprintf("%s Loading...", c.spinner.View()))
 	}
@@ -134,29 +129,43 @@ func (c *commentsView) setSize(width, height int) {
 }
 
 func (c *commentsView) fetchItem() tea.Cmd {
-	return func() tea.Msg {
-		item, err := c.client.FetchItem(context.Background(), c.itemID)
-		if err != nil {
-			return itemLoadFailedMsg{err: err}
-		}
-		return itemLoadSuccessMsg{item: item}
-	}
-}
-
-func (c commentsView) fetchComments() tea.Cmd {
 	var cmds []tea.Cmd
 
 	cmd := func() tea.Msg {
-		return newCommentsLoadingMsg(c.item)
+		return newItemLoadingMsg(c.itemID)
 	}
 	cmds = append(cmds, cmd)
 
 	cmd = func() tea.Msg {
-		items, err := c.client.FetchComments(context.Background(), c.item.KIDs)
+		item, err := c.client.FetchItem(context.Background(), c.itemID)
 		if err != nil {
-			return newCommentsLoadFailedMsg(c.item, err)
+			return newItemLoadFailedMsg(c.itemID, err)
 		}
-		return newCommentsLoadSuccessMsg(c.item, items)
+		return newItemLoadSuccessMsg(c.itemID, item)
+	}
+	cmds = append(cmds, cmd)
+
+	return tea.Batch(cmds...)
+}
+
+func (c commentsView) fetchComments() tea.Cmd {
+	if c.itemMsg.state != stateLoadSuccess {
+		return nil
+	}
+
+	var cmds []tea.Cmd
+
+	cmd := func() tea.Msg {
+		return newCommentsLoadingMsg(c.itemMsg.item)
+	}
+	cmds = append(cmds, cmd)
+
+	cmd = func() tea.Msg {
+		items, err := c.client.FetchComments(context.Background(), c.itemMsg.item.KIDs)
+		if err != nil {
+			return newCommentsLoadFailedMsg(c.itemMsg.item, err)
+		}
+		return newCommentsLoadSuccessMsg(c.itemMsg.item, items)
 	}
 	cmds = append(cmds, cmd)
 
@@ -164,19 +173,23 @@ func (c commentsView) fetchComments() tea.Cmd {
 }
 
 func (c commentsView) fetchChildren(parentID int64, ids []int64) tea.Cmd {
+	if c.itemMsg.state != stateLoadSuccess {
+		return nil
+	}
+
 	var cmds []tea.Cmd
 
 	cmd := func() tea.Msg {
-		return newCommentChildrenLoadingMsg(c.item, parentID)
+		return newCommentChildrenLoadingMsg(c.itemMsg.item, parentID)
 	}
 	cmds = append(cmds, cmd)
 
 	cmd = func() tea.Msg {
 		items, err := c.client.FetchComments(context.Background(), ids)
 		if err != nil {
-			return newCommentChildrenLoadFailedMsg(c.item, parentID, err)
+			return newCommentChildrenLoadFailedMsg(c.itemMsg.item, parentID, err)
 		}
-		return newCommentChildrenLoadSuccessMsg(c.item, parentID, items)
+		return newCommentChildrenLoadSuccessMsg(c.itemMsg.item, parentID, items)
 	}
 	cmds = append(cmds, cmd)
 
@@ -213,10 +226,15 @@ func (c *commentsView) applyCommentsMsg(msg commentsMsg) {
 }
 
 func (c *commentsView) itemDomain() string {
-	if c.item.URL == "" {
+	if c.itemMsg.state != stateLoadSuccess {
 		return ""
 	}
-	u, err := url.Parse(c.item.URL)
+
+	if c.itemMsg.item.URL == "" {
+		return ""
+	}
+
+	u, err := url.Parse(c.itemMsg.item.URL)
 	if err != nil {
 		return ""
 	}
@@ -235,6 +253,10 @@ func (c *commentsView) itemDomain() string {
 }
 
 func (c *commentsView) renderItemHeader() string {
+	if c.itemMsg.state != stateLoadSuccess {
+		return ""
+	}
+
 	var s strings.Builder
 
 	titleStyle := lipgloss.NewStyle().Padding(0, 1).
@@ -246,26 +268,26 @@ func (c *commentsView) renderItemHeader() string {
 		domain = fmt.Sprintf(" (%s)", domain)
 	}
 
-	titleText := fmt.Sprintf("%s%s", c.item.Title, domain)
+	titleText := fmt.Sprintf("%s%s", c.itemMsg.item.Title, domain)
 	// Word wrap title based on viewport width
 	wrappedTitle := lipgloss.NewStyle().Width(max(1, c.model.Width()-2)).Render(titleText)
 	fmt.Fprintln(&s, titleStyle.Render(wrappedTitle))
 
-	desc := fmt.Sprintf("%d points by %s %s", c.item.Score, c.item.By, c.item.TimeAgo())
-	if c.item.Descendants == 1 {
+	desc := fmt.Sprintf("%d points by %s %s", c.itemMsg.item.Score, c.itemMsg.item.By, c.itemMsg.item.TimeAgo())
+	if c.itemMsg.item.Descendants == 1 {
 		desc = fmt.Sprintf("%s | 1 comment", desc)
-	} else if c.item.Descendants > 1 {
-		desc = fmt.Sprintf("%s | %d comments", desc, c.item.Descendants)
+	} else if c.itemMsg.item.Descendants > 1 {
+		desc = fmt.Sprintf("%s | %d comments", desc, c.itemMsg.item.Descendants)
 	}
 	fmt.Fprintln(&s, descStyle.Render(desc))
 
 	// If there is text in the item (e.g. Ask HN post content), convert it and display it!
-	if c.item.Text != "" {
+	if c.itemMsg.item.Text != "" {
 		var content string
 		var err error
-		content, err = c.converter.ConvertString(c.item.Text)
+		content, err = c.converter.ConvertString(c.itemMsg.item.Text)
 		if err != nil {
-			content = c.item.Text
+			content = c.itemMsg.item.Text
 		}
 		content = strings.TrimSpace(content)
 		content = html.UnescapeString(content)
@@ -290,7 +312,7 @@ func (c *commentsView) renderItemHeader() string {
 }
 
 func (c *commentsView) render() {
-	if !c.itemLoaded {
+	if c.itemMsg.state != stateLoadSuccess {
 		return
 	}
 
@@ -304,11 +326,12 @@ func (c *commentsView) render() {
 
 	// 2. Render comments or loading comments state
 	if c.tree.RootCount() == 0 {
-		if c.msg.state == stateLoading {
+		switch c.msg.state {
+		case stateLoading:
 			c.appendLines(&s, &line, fmt.Sprintf("  %s Loading comments...", c.spinner.View()))
-		} else if c.msg.state == stateLoadFailed {
+		case stateLoadFailed:
 			c.appendLines(&s, &line, fmt.Sprintf("  Load comments failed: %s", c.msg.err.Error()))
-		} else if c.msg.state == stateLoadSuccess {
+		case stateLoadSuccess:
 			c.appendLines(&s, &line, "  No comments")
 		}
 	} else {
@@ -409,7 +432,7 @@ func (c *commentsView) ensureSelectedVisible() {
 }
 
 func (c *commentsView) hasLoadingComments() bool {
-	return c.msg.state == stateLoading || c.tree.HasLoading()
+	return c.msg.state == stateLoading || c.tree.HasLoading() || c.itemMsg.state == stateLoading
 }
 
 func (c *commentsView) onKeyPressMsg(msg tea.KeyPressMsg) (*commentsView, tea.Cmd) {

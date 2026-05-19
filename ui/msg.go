@@ -63,6 +63,34 @@ func newItemsLoadFailedMsg(cat domain.Category, err error) itemsMsg {
 
 type itemSelectedMsg domain.Item
 
+type itemMsg struct {
+	itemID int64
+	item   domain.Item
+	baseMsg
+}
+
+func newItemLoadingMsg(itemID int64) itemMsg {
+	return itemMsg{
+		baseMsg: baseMsg{state: stateLoading},
+		itemID:  itemID,
+	}
+}
+
+func newItemLoadSuccessMsg(itemID int64, item domain.Item) itemMsg {
+	return itemMsg{
+		baseMsg: baseMsg{state: stateLoadSuccess},
+		itemID:  itemID,
+		item:    item,
+	}
+}
+
+func newItemLoadFailedMsg(itemID int64, err error) itemMsg {
+	return itemMsg{
+		baseMsg: baseMsg{state: stateLoadFailed, err: err},
+		itemID:  itemID,
+	}
+}
+
 type commentsMsg struct {
 	item     domain.Item
 	parentID int64

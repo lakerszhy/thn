@@ -201,31 +201,25 @@ func (a *app) onKeyPressMsg(msg tea.KeyPressMsg) (*app, tea.Cmd) {
 		return a, nil
 	}
 
-	if key.Matches(msg, a.hotkey.NextCategory) {
-		index := slices.Index(a.categories, a.current)
-		index = min(index+1, len(a.categories)-1)
-		return a, a.updateCurrentCategory(index)
-	}
-
-	if key.Matches(msg, a.hotkey.PrevCategory) {
-		index := slices.Index(a.categories, a.current)
-		index = max(index-1, 0)
-		return a, a.updateCurrentCategory(index)
-	}
-
 	var cmd tea.Cmd
 
-	if !a.focusOnItemsView {
+	if a.focusOnItemsView {
+		if key.Matches(msg, a.hotkey.NextCategory) {
+			index := slices.Index(a.categories, a.current)
+			index = min(index+1, len(a.categories)-1)
+			return a, a.updateCurrentCategory(index)
+		}
+
+		if key.Matches(msg, a.hotkey.PrevCategory) {
+			index := slices.Index(a.categories, a.current)
+			index = max(index-1, 0)
+			return a, a.updateCurrentCategory(index)
+		}
+	} else {
 		a.commentsView, cmd = a.commentsView.Update(msg)
 		return a, cmd
 	}
 
-	for i := range a.views {
-		if i == a.current {
-			a.views[i], cmd = a.views[i].Update(msg)
-			return a, cmd
-		}
-	}
-
-	return a, nil
+	a.views[a.current], cmd = a.views[a.current].Update(msg)
+	return a, cmd
 }

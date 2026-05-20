@@ -84,22 +84,13 @@ func (c *View) Update(msg tea.Msg) (*View, tea.Cmd) {
 		}
 		return c, nil
 	case spinner.TickMsg:
-		if c.hasLoadingComments() {
+		if c.msg.state == stateLoading || c.itemMsg.state == stateLoading {
 			c.spinner, cmd = c.spinner.Update(msg)
 			c.render()
 		}
 		return c, cmd
 	case commentsMsg:
-		if msg.itemID != c.itemID {
-			return c, nil
-		}
-
-		c.msg = msg
-		c.applyCommentsMsg(msg)
-		if msg.state == stateLoading {
-			return c, c.spinner.Tick
-		}
-		return c, nil
+		return c.onCommentsMsg(msg)
 	case tea.KeyPressMsg:
 		c, cmd = c.onKeyPressMsg(msg)
 		return c, cmd
@@ -198,27 +189,36 @@ func (c *View) fetchSubComments(parentID int64, ids []int64) tea.Cmd {
 	return tea.Batch(cmds...)
 }
 
-func (c *View) applyCommentsMsg(msg commentsMsg) {
+func (c *View) onCommentsMsg(msg commentsMsg) (*View, tea.Cmd) {
+	if msg.itemID != c.itemID {
+		return c, nil
+	}
+
+	c.msg = msg
+
 	// comments of item
-	if msg.parentID == c.itemID {
+	if msg.isRoot() {
 		switch msg.state {
-		case stateLoading:
-			return
 		case stateLoadFailed:
 			c.model.SetContent(fmt.Sprintf("Load Failed: %s", msg.err.Error()))
-			return
+			return c, nil
 		case stateLoadSuccess:
 			c.tree.SetRoots(msg.comments)
+			c.render()
+			c.ensureSelectedVisible()
+			return c, nil
 		}
-		c.render()
-		c.ensureSelectedVisible()
-		return
+
+		return c, nil
 	}
+
+	var cmd tea.Cmd
 
 	// sub comments of some comment
 	switch msg.state {
 	case stateLoading:
 		c.tree.StartLoading(msg.parentID)
+		cmd = c.spinner.Tick
 	case stateLoadSuccess:
 		c.tree.SetChildren(msg.parentID, msg.comments)
 	case stateLoadFailed:
@@ -227,6 +227,8 @@ func (c *View) applyCommentsMsg(msg commentsMsg) {
 
 	c.render()
 	c.ensureSelectedVisible()
+
+	return c, cmd
 }
 
 func (c *View) renderItemHeader() string {
@@ -406,10 +408,6 @@ func (c *View) ensureSelectedVisible() {
 			return
 		}
 	}
-}
-
-func (c *View) hasLoadingComments() bool {
-	return c.msg.state == stateLoading || c.tree.HasLoading() || c.itemMsg.state == stateLoading
 }
 
 func (c *View) onKeyPressMsg(msg tea.KeyPressMsg) (*View, tea.Cmd) {

@@ -40,14 +40,18 @@ func newItemLoadFailedMsg(itemID int64, err error) itemMsg {
 	}
 }
 
-// if parentID == itemID, it is comments for the item which id is itemID
-// if parentID != itemID, it is sub comments for the comment which id is parentID
+// If parentID == itemID, it is the comments of the item whose id is itemID.
+// If parentID != itemID, it is sub comments of the comment whose id is parentID.
 type commentsMsg struct {
 	itemID   int64
 	parentID int64
 	comments []domain.Comment
 	state    state
 	err      error
+}
+
+func (m commentsMsg) isRoot() bool {
+	return m.parentID == m.itemID
 }
 
 func newCommentsLoadingMsg(itemID int64) commentsMsg {

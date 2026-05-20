@@ -46,6 +46,11 @@ func NewApp(client *hn.Client, theme config.Theme, hotkey config.Hotkey) tea.Mod
 		domain.CategoryJob,
 	}
 
+	itemsViewStyle := lipgloss.NewStyle().Border(theme.TitleBar.Border.Style).
+		BorderForeground(theme.TitleBar.Border.Color)
+	commentsViewStyle := lipgloss.NewStyle().Border(theme.Comment.Border.Style).
+		BorderForeground(theme.Comment.Border.Color)
+
 	return &app{
 		client:            client,
 		theme:             theme,
@@ -54,8 +59,8 @@ func NewApp(client *hn.Client, theme config.Theme, hotkey config.Hotkey) tea.Mod
 		current:           domain.CategoryTop,
 		titleBar:          newTitleBar(categories, theme.TitleBar),
 		focusOnItemsView:  true,
-		itemsViewStyle:    lipgloss.NewStyle().Border(theme.TitleBar.Border.Style),
-		commentsViewStyle: lipgloss.NewStyle().Border(theme.Comment.Border.Style),
+		itemsViewStyle:    itemsViewStyle,
+		commentsViewStyle: commentsViewStyle,
 		itemsViews: map[domain.Category]*items.View{
 			domain.CategoryTop: items.NewView(domain.CategoryTop, client, theme, hotkey),
 		},
@@ -115,16 +120,16 @@ func (a *app) View() tea.View {
 		a.itemsViews[a.current].View(),
 	)
 
-	style := a.itemsViewStyle.BorderForeground(a.theme.TitleBar.Border.FocusColor)
-	if !a.focusOnItemsView {
-		style = style.BorderForeground(a.theme.TitleBar.Border.Color)
+	style := a.itemsViewStyle
+	if a.focusOnItemsView {
+		style = style.BorderForeground(a.theme.TitleBar.Border.FocusColor)
 	}
 	content = style.Render(content)
 
 	if a.commentsView != nil {
-		commentsStyle := a.commentsViewStyle.BorderForeground(a.theme.Comment.Border.Color)
+		commentsStyle := a.commentsViewStyle
 		if !a.focusOnItemsView {
-			commentsStyle = a.commentsViewStyle.BorderForeground(a.theme.Comment.Border.FocusColor)
+			commentsStyle = commentsStyle.BorderForeground(a.theme.Comment.Border.FocusColor)
 		}
 
 		content = lipgloss.JoinHorizontal(
@@ -178,9 +183,9 @@ func (a *app) updateSize() {
 }
 
 func (a *app) renderTitleBar() string {
-	style := lipgloss.NewStyle().BorderForeground(a.theme.TitleBar.Border.Color).
-		Border(a.theme.TitleBar.Border.Style, false, false, true, false).
-		Width(a.titleBar.width)
+	style := lipgloss.NewStyle().Width(a.titleBar.width).
+		Border(a.theme.TitleBar.Border.Style, false, false, true, false)
+
 	if a.focusOnItemsView {
 		style = style.BorderForeground(a.theme.TitleBar.Border.FocusColor)
 	}

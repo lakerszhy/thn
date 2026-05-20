@@ -8,6 +8,16 @@ import (
 	"github.com/dustin/go-humanize"
 )
 
+type PagedItems struct {
+	Pagination
+
+	Items []Item
+}
+
+func NewPagedItems(p Pagination, items []Item) PagedItems {
+	return PagedItems{Pagination: p, Items: items}
+}
+
 type Item struct {
 	Base
 

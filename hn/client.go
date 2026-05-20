@@ -46,7 +46,7 @@ func New(ctx context.Context) (*Client, error) {
 	}, nil
 }
 
-func (c *Client) FetchItems(ctx context.Context, cat domain.Category, p domain.Pagination) ([]domain.Item, error) {
+func (c *Client) FetchItems(ctx context.Context, cat domain.Category, p domain.Pagination) (domain.PagedItems, error) {
 	c.mu.RLock()
 	ids, exisit := c.cache[cat]
 	c.mu.RUnlock()
@@ -55,19 +55,20 @@ func (c *Client) FetchItems(ctx context.Context, cat domain.Category, p domain.P
 		var err error
 		ids, err = c.fetchIDs(ctx, categoryFromDomain(cat))
 		if err != nil {
-			return nil, err
+			return domain.NewPagedItems(p, nil), err
 		}
 		c.mu.Lock()
 		c.cache[cat] = ids
 		c.mu.Unlock()
 	}
 
-	start, end := p.Range(len(ids))
-	pageIDs := ids[start:end]
+	p = p.SetTotalCount(len(ids))
+	start, end := p.Range()
+	itemIDs := ids[start:end]
 
-	items, err := c.fetchItems(ctx, pageIDs)
+	items, err := c.fetchItems(ctx, itemIDs)
 	if err != nil {
-		return nil, err
+		return domain.NewPagedItems(p, nil), err
 	}
 
 	ret := make([]domain.Item, len(items))
@@ -75,7 +76,7 @@ func (c *Client) FetchItems(ctx context.Context, cat domain.Category, p domain.P
 		ret[i] = item.ToDomain()
 	}
 
-	return ret, nil
+	return domain.NewPagedItems(p, ret), nil
 }
 
 func (c *Client) FetchComments(ctx context.Context, ids []int64) ([]domain.Comment, error) {

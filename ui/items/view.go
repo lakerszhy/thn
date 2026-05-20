@@ -16,13 +16,12 @@ import (
 )
 
 type View struct {
-	theme      config.Theme
-	hotkey     config.Hotkey
-	category   domain.Category
-	pagination domain.Pagination
-	client     *hn.Client
-	msg        itemsMsg
-	spinner    spinner.Model
+	theme    config.Theme
+	hotkey   config.Hotkey
+	category domain.Category
+	client   *hn.Client
+	msg      itemsMsg
+	spinner  spinner.Model
 
 	model list.Model
 }
@@ -48,13 +47,12 @@ func NewView(category domain.Category, client *hn.Client, theme config.Theme, ho
 	s.Spinner = spinner.Dot
 
 	return &View{
-		category:   category,
-		hotkey:     hotkey,
-		client:     client,
-		pagination: domain.NewPagination(),
-		theme:      theme,
-		model:      model,
-		spinner:    s,
+		category: category,
+		hotkey:   hotkey,
+		client:   client,
+		theme:    theme,
+		model:    model,
+		spinner:  s,
 	}
 }
 
@@ -109,29 +107,34 @@ func (t *View) onItemsMsg(msg itemsMsg) (*View, tea.Cmd) {
 	switch msg.state {
 	case stateLoading, stateLoadFailed:
 		t.model.SetItems(nil)
-	case stateLoadSuccess:
-		items := make([]list.Item, len(msg.items)+1)
-		for i, v := range msg.items {
-			items[i] = listItem{Item: v}
-		}
-		items[len(items)-1] = loadMoreItem{}
-		t.model.SetItems(items)
-	case stateLoadMoreSuccess:
-		t.pagination = t.pagination.Next()
-
-		items := make([]list.Item, 0, len(msg.items)+len(t.msg.items))
-		items = append(items, t.model.Items()[0:len(t.model.Items())-1]...)
-		for _, v := range msg.items {
-			items = append(items, listItem{Item: v})
-		}
-		items = append(items, loadMoreItem{})
-		t.model.SetItems(items)
+	case stateLoadSuccess, stateLoadMoreSuccess:
+		t.onItemsLoaded(msg.pagedItems)
 	}
 
 	// handle by delegate
 	var cmd tea.Cmd
 	t.model, cmd = t.model.Update(msg)
 	return t, cmd
+}
+
+func (t *View) onItemsLoaded(pagedItems domain.PagedItems) {
+	items := make([]list.Item, 0, len(t.model.Items())+len(pagedItems.Items))
+
+	for _, v := range t.model.Items() {
+		if _, ok := v.(listItem); ok {
+			items = append(items, v)
+		}
+	}
+
+	for _, v := range pagedItems.Items {
+		items = append(items, listItem{Item: v})
+	}
+
+	if pagedItems.HasMore() {
+		items = append(items, loadMoreItem{})
+	}
+
+	t.model.SetItems(items)
 }
 
 func (t *View) onKeyPressMsg(msg tea.KeyPressMsg) (*View, tea.Cmd) {
@@ -165,7 +168,7 @@ func (t *View) fetch() tea.Cmd {
 	cmds = append(cmds, cmd)
 
 	cmd = func() tea.Msg {
-		items, err := t.client.FetchItems(context.Background(), t.category, t.pagination)
+		items, err := t.client.FetchItems(context.Background(), t.category, domain.NewPagination())
 		if err != nil {
 			return newLoadFailedMsg(t.category, err)
 		}
@@ -181,6 +184,13 @@ func (t *View) fetchMore() tea.Cmd {
 		return nil
 	}
 
+	pagination := t.msg.pagedItems.Pagination
+	if !pagination.HasMore() {
+		return nil
+	}
+
+	pagination = pagination.Next()
+
 	var cmds []tea.Cmd
 
 	cmd := func() tea.Msg {
@@ -189,7 +199,7 @@ func (t *View) fetchMore() tea.Cmd {
 	cmds = append(cmds, cmd)
 
 	cmd = func() tea.Msg {
-		items, err := t.client.FetchItems(context.Background(), t.category, t.pagination.Next())
+		items, err := t.client.FetchItems(context.Background(), t.category, pagination)
 		if err != nil {
 			return newLoadMoreFailedMsg(t.category, err)
 		}

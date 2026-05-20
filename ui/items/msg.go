@@ -16,10 +16,10 @@ type state int
 type ItemSelectedMsg domain.Item
 
 type itemsMsg struct {
-	category domain.Category
-	items    []domain.Item
-	state    state
-	err      error
+	category   domain.Category
+	pagedItems domain.PagedItems
+	state      state
+	err        error
 }
 
 func newLoadingMsg(cat domain.Category) itemsMsg {
@@ -29,11 +29,11 @@ func newLoadingMsg(cat domain.Category) itemsMsg {
 	}
 }
 
-func newLoadSuccessMsg(cat domain.Category, items []domain.Item) itemsMsg {
+func newLoadSuccessMsg(cat domain.Category, pagedItems domain.PagedItems) itemsMsg {
 	return itemsMsg{
-		state:    stateLoadSuccess,
-		category: cat,
-		items:    items,
+		state:      stateLoadSuccess,
+		category:   cat,
+		pagedItems: pagedItems,
 	}
 }
 
@@ -52,11 +52,11 @@ func newLoadingMoreMsg(cat domain.Category) itemsMsg {
 	}
 }
 
-func newLoadMoreSuccessMsg(cat domain.Category, items []domain.Item) itemsMsg {
+func newLoadMoreSuccessMsg(cat domain.Category, pagedItems domain.PagedItems) itemsMsg {
 	return itemsMsg{
-		state:    stateLoadMoreSuccess,
-		category: cat,
-		items:    items,
+		state:      stateLoadMoreSuccess,
+		category:   cat,
+		pagedItems: pagedItems,
 	}
 }
 

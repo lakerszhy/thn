@@ -14,6 +14,7 @@ var Hotkeys = Hotkey{
 	OpenComments: key.NewBinding(key.WithKeys("enter", "space")),
 
 	CloseComments:      key.NewBinding(key.WithKeys("esc")),
+	ToggleFullScreen:   key.NewBinding(key.WithKeys("ctrl+enter")),
 	ToggleSubComments:  key.NewBinding(key.WithKeys("enter", "space")),
 	SelectParent:       key.NewBinding(key.WithKeys("left", "h")),
 	PrevComment:        key.NewBinding(key.WithKeys("up", "k")),
@@ -37,6 +38,7 @@ type Hotkey struct {
 	OpenComments key.Binding
 
 	CloseComments      key.Binding
+	ToggleFullScreen   key.Binding
 	ToggleSubComments  key.Binding
 	SelectParent       key.Binding
 	PrevComment        key.Binding

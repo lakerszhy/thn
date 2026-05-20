@@ -22,7 +22,8 @@ type app struct {
 	itemsViews   map[domain.Category]*items.View
 	commentsView *comments.View
 
-	focusOnItemsView bool
+	focusOnItemsView    bool
+	commtentsFullscreen bool
 
 	client *hn.Client
 
@@ -114,17 +115,21 @@ func (a *app) View() tea.View {
 	v.WindowTitle = "THN - Terminal for Hacker News"
 	v.AltScreen = true
 
-	content := lipgloss.JoinVertical(
-		lipgloss.Left,
-		a.renderTitleBar(),
-		a.itemsViews[a.current].View(),
-	)
+	var content string
 
-	style := a.itemsViewStyle
-	if a.focusOnItemsView {
-		style = style.BorderForeground(a.theme.TitleBar.Border.FocusColor)
+	if !a.commtentsFullscreen {
+		content = lipgloss.JoinVertical(
+			lipgloss.Left,
+			a.renderTitleBar(),
+			a.itemsViews[a.current].View(),
+		)
+
+		style := a.itemsViewStyle
+		if a.focusOnItemsView {
+			style = style.BorderForeground(a.theme.TitleBar.Border.FocusColor)
+		}
+		content = style.Render(content)
 	}
-	content = style.Render(content)
 
 	if a.commentsView != nil {
 		commentsStyle := a.commentsViewStyle
@@ -158,6 +163,10 @@ func (a *app) updateCurrentCategory(index int) tea.Cmd {
 
 func (a *app) updateSize() {
 	itemsWidth := a.windowWidth
+
+	if a.commtentsFullscreen {
+		itemsWidth = 0
+	}
 
 	if a.commentsView != nil {
 		itemsWidth /= 3
@@ -201,6 +210,13 @@ func (a *app) onKeyPressMsg(msg tea.KeyPressMsg) (*app, tea.Cmd) {
 	if key.Matches(msg, a.hotkey.CloseComments) {
 		a.focusOnItemsView = true
 		a.commentsView = nil
+		a.commtentsFullscreen = false
+		a.updateSize()
+		return a, nil
+	}
+
+	if !a.focusOnItemsView && key.Matches(msg, a.hotkey.ToggleFullScreen) {
+		a.commtentsFullscreen = !a.commtentsFullscreen
 		a.updateSize()
 		return a, nil
 	}

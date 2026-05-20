@@ -24,6 +24,10 @@ func newTitleBar(categories []domain.Category, theme config.TitleBarTheme) *titl
 }
 
 func (t *titleBar) View() string {
+	if t.width <= 0 {
+		return ""
+	}
+
 	catStyle := lipgloss.NewStyle().Padding(0, 1)
 
 	categories := make([]string, len(t.categories))

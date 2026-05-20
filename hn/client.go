@@ -7,9 +7,10 @@ import (
 
 	firebase "firebase.google.com/go/v4"
 	"firebase.google.com/go/v4/db"
-	"github.com/lakerszhy/thn/domain"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/api/option"
+
+	"github.com/lakerszhy/thn/domain"
 )
 
 type Client struct {

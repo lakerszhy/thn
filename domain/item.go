@@ -25,7 +25,6 @@ type Item struct {
 
 	Type        string
 	Text        string
-	Parent      int64
 	Poll        int64
 	KIDs        []int64
 	URL         string

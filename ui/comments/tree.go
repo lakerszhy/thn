@@ -1,11 +1,13 @@
 package comments
 
-import "github.com/lakerszhy/thn/domain"
+import (
+	"log/slog"
+
+	"github.com/lakerszhy/thn/domain"
+)
 
 type node struct {
 	comment  domain.Comment
-	parentID int64
-	children []int64
 	loaded   bool
 	loading  bool
 	expanded bool
@@ -56,7 +58,7 @@ func (t *tree) Node(id int64) *node {
 func (t *tree) SetRoots(comments []domain.Comment) {
 	t.roots = t.roots[:0]
 	for _, comment := range comments {
-		t.upsertComment(comment, t.itemID)
+		t.upsertComment(comment)
 		t.roots = append(t.roots, comment.ID)
 	}
 
@@ -79,13 +81,13 @@ func (t *tree) SetChildren(parentID int64, comments []domain.Comment) {
 		return
 	}
 
-	parent.children = parent.children[:0]
 	parent.loaded = true
 	parent.loading = false
 	parent.err = nil
 	for _, comment := range comments {
-		t.upsertComment(comment, parent.comment.ID)
-		parent.children = append(parent.children, comment.ID)
+		// TODO:
+		slog.Debug("test for parent id", "parentid", parentID, "comment_pid", comment.Parent)
+		t.upsertComment(comment)
 	}
 	t.rebuildVisible()
 }
@@ -140,11 +142,11 @@ func (t *tree) SelectVisible(delta int) {
 
 func (t *tree) SelectParent() {
 	node := t.nodes[t.selectedID]
-	if node == nil || node.parentID == t.itemID {
+	if node == nil || node.comment.Parent == t.itemID {
 		return
 	}
 
-	t.selectedID = node.parentID
+	t.selectedID = node.comment.Parent
 }
 
 func (t *tree) SelectSibling(delta int) {
@@ -154,8 +156,8 @@ func (t *tree) SelectSibling(delta int) {
 	}
 
 	siblings := t.roots
-	if parent := t.nodes[node.parentID]; parent != nil {
-		siblings = parent.children
+	if parent := t.nodes[node.comment.Parent]; parent != nil {
+		siblings = parent.comment.KIDs
 	}
 
 	for i, id := range siblings {
@@ -209,18 +211,12 @@ func (t *tree) HasLoading() bool {
 	return false
 }
 
-func (t *tree) upsertComment(comment domain.Comment, parentID int64) {
-	n, ok := t.nodes[comment.ID]
-	if !ok {
-		t.nodes[comment.ID] = &node{
-			comment:  comment,
-			parentID: parentID,
-		}
-		return
+func (t *tree) upsertComment(comment domain.Comment) {
+	if n, ok := t.nodes[comment.ID]; ok {
+		n.comment = comment
+	} else {
+		t.nodes[comment.ID] = &node{comment: comment}
 	}
-
-	n.comment = comment
-	n.parentID = parentID
 }
 
 func (t *tree) rebuildVisible() {
@@ -241,7 +237,7 @@ func (t *tree) appendVisible(id int64, depth int) {
 		return
 	}
 
-	for _, childID := range node.children {
+	for _, childID := range node.comment.KIDs {
 		t.appendVisible(childID, depth+1)
 	}
 }

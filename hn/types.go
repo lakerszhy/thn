@@ -52,7 +52,6 @@ func (i item) ToDomain() domain.Item {
 		},
 		Type:        i.Type,
 		Text:        i.Text,
-		Parent:      i.Parent,
 		Poll:        i.Poll,
 		KIDs:        i.KIDs,
 		URL:         i.URL,

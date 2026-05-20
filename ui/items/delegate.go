@@ -3,8 +3,6 @@ package items
 import (
 	"fmt"
 	"io"
-	"net/url"
-	"strings"
 
 	"charm.land/bubbles/v2/list"
 	tea "charm.land/bubbletea/v2"
@@ -33,25 +31,6 @@ func (l listItem) Description() string {
 	}
 
 	return v
-}
-
-func (l listItem) Domain() string {
-	u, err := url.Parse(l.URL)
-	if err != nil {
-		return ""
-	}
-
-	host := strings.TrimPrefix(u.Hostname(), "www.")
-
-	if host == "github.com" || host == "twitter.com" || host == "x.com" {
-		paths := strings.Split(strings.TrimPrefix(u.Path, "/"), "/")
-		if len(paths) > 1 {
-			r, _ := url.JoinPath(host, paths[0])
-			return r
-		}
-	}
-
-	return host
 }
 
 type loadMoreItem struct {

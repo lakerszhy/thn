@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"html"
-	"net/url"
 	"strings"
 
 	"charm.land/bubbles/v2/key"
@@ -228,34 +227,6 @@ func (c *View) applyCommentsMsg(msg commentsMsg) {
 	c.ensureSelectedVisible()
 }
 
-// TODO: should be moved to domain
-func (c *View) itemDomain() string {
-	if c.itemMsg.state != stateLoadSuccess {
-		return ""
-	}
-
-	if c.itemMsg.item.URL == "" {
-		return ""
-	}
-
-	u, err := url.Parse(c.itemMsg.item.URL)
-	if err != nil {
-		return ""
-	}
-
-	host := strings.TrimPrefix(u.Hostname(), "www.")
-
-	if host == "github.com" || host == "twitter.com" || host == "x.com" {
-		paths := strings.Split(strings.TrimPrefix(u.Path, "/"), "/")
-		if len(paths) > 1 {
-			r, _ := url.JoinPath(host, paths[0])
-			return r
-		}
-	}
-
-	return host
-}
-
 func (c *View) renderItemHeader() string {
 	if c.itemMsg.state != stateLoadSuccess {
 		return ""
@@ -267,7 +238,7 @@ func (c *View) renderItemHeader() string {
 		Foreground(c.theme.Item.TitleSelectedColor).Bold(true)
 	descStyle := lipgloss.NewStyle().Padding(0, 1).Foreground(c.theme.Item.DescColor)
 
-	domain := c.itemDomain()
+	domain := c.itemMsg.item.Domain()
 	if domain != "" {
 		domain = fmt.Sprintf(" (%s)", domain)
 	}

@@ -2,7 +2,6 @@ package ui
 
 import (
 	"slices"
-	"strings"
 
 	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
@@ -16,10 +15,13 @@ import (
 )
 
 type app struct {
-	categories       []domain.Category
-	current          domain.Category
-	itemsViews       map[domain.Category]*items.View
-	commentsView     *comments.View
+	categories []domain.Category
+	current    domain.Category
+
+	titleBar     *titleBar
+	itemsViews   map[domain.Category]*items.View
+	commentsView *comments.View
+
 	focusOnItemsView bool
 
 	client *hn.Client
@@ -35,22 +37,25 @@ type app struct {
 }
 
 func NewApp(client *hn.Client, theme config.Theme, hotkey config.Hotkey) tea.Model {
+	categories := []domain.Category{
+		domain.CategoryTop,
+		domain.CategoryNew,
+		domain.CategoryBest,
+		domain.CategoryAsk,
+		domain.CategoryShow,
+		domain.CategoryJob,
+	}
+
 	return &app{
 		client:            client,
 		theme:             theme,
 		hotkey:            hotkey,
+		categories:        categories,
+		current:           domain.CategoryTop,
+		titleBar:          newTitleBar(categories, theme.TitleBar),
+		focusOnItemsView:  true,
 		itemsViewStyle:    lipgloss.NewStyle().Border(theme.TitleBar.Border.Style),
 		commentsViewStyle: lipgloss.NewStyle().Border(theme.Comment.Border.Style),
-		categories: []domain.Category{
-			domain.CategoryTop,
-			domain.CategoryNew,
-			domain.CategoryBest,
-			domain.CategoryAsk,
-			domain.CategoryShow,
-			domain.CategoryJob,
-		},
-		focusOnItemsView: true,
-		current:          domain.CategoryTop,
 		itemsViews: map[domain.Category]*items.View{
 			domain.CategoryTop: items.NewView(domain.CategoryTop, client, theme, hotkey),
 		},
@@ -58,6 +63,8 @@ func NewApp(client *hn.Client, theme config.Theme, hotkey config.Hotkey) tea.Mod
 }
 
 func (a *app) Init() tea.Cmd {
+	a.titleBar.setCategory(a.current)
+
 	return a.itemsViews[a.current].Init()
 }
 
@@ -104,13 +111,13 @@ func (a *app) View() tea.View {
 
 	content := lipgloss.JoinVertical(
 		lipgloss.Left,
-		a.renderCategories(),
+		a.renderTitleBar(),
 		a.itemsViews[a.current].View(),
 	)
 
 	style := a.itemsViewStyle.BorderForeground(a.theme.TitleBar.Border.FocusColor)
 	if !a.focusOnItemsView {
-		style = a.itemsViewStyle.BorderForeground(a.theme.TitleBar.Border.Color)
+		style = style.BorderForeground(a.theme.TitleBar.Border.Color)
 	}
 	content = style.Render(content)
 
@@ -133,6 +140,7 @@ func (a *app) View() tea.View {
 
 func (a *app) updateCurrentCategory(index int) tea.Cmd {
 	a.current = a.categories[index]
+	a.titleBar.setCategory(a.current)
 
 	if _, ok := a.itemsViews[a.current]; !ok {
 		a.itemsViews[a.current] = items.NewView(a.current, a.client, a.theme, a.hotkey)
@@ -158,38 +166,26 @@ func (a *app) updateSize() {
 
 	a.itemsViewStyle = a.itemsViewStyle.Width(itemsWidth)
 
-	//nolint:mnd // 2 for category bar
-	itemsHeight := a.windowHeight - a.itemsViewStyle.GetVerticalBorderSize() - 2
-	itemsWidth -= a.itemsViewStyle.GetHorizontalFrameSize()
+	availableWidth := itemsWidth - a.itemsViewStyle.GetHorizontalFrameSize()
+	//nolint:mnd // 2 for title bar
+	availableHeight := a.windowHeight - a.itemsViewStyle.GetVerticalBorderSize() - 2
+
+	a.titleBar.setWidth(availableWidth)
 
 	for _, v := range a.itemsViews {
-		v.SetSize(itemsWidth, itemsHeight)
+		v.SetSize(availableWidth, availableHeight)
 	}
 }
 
-func (a *app) renderCategories() string {
-	catStyle := lipgloss.NewStyle().Padding(0, 1)
-
-	categories := make([]string, len(a.categories))
-	for i, c := range a.categories {
-		if c == a.current {
-			catStyle = catStyle.Foreground(a.theme.TitleBar.CategorySelectedColor).Bold(true)
-		} else {
-			catStyle = catStyle.Foreground(a.theme.TitleBar.CategoryColor)
-		}
-		categories[i] = catStyle.Render(string(c))
-	}
-
+func (a *app) renderTitleBar() string {
 	style := lipgloss.NewStyle().BorderForeground(a.theme.TitleBar.Border.Color).
 		Border(a.theme.TitleBar.Border.Style, false, false, true, false).
-		Width(a.itemsViewStyle.GetWidth() - a.itemsViewStyle.GetHorizontalFrameSize())
+		Width(a.titleBar.width)
 	if a.focusOnItemsView {
 		style = style.BorderForeground(a.theme.TitleBar.Border.FocusColor)
 	}
 
-	divider := lipgloss.NewStyle().Foreground(a.theme.TitleBar.DivideColor).Render("|")
-
-	return style.Render(strings.Join(categories, divider))
+	return style.Render(a.titleBar.View())
 }
 
 func (a *app) onKeyPressMsg(msg tea.KeyPressMsg) (*app, tea.Cmd) {
@@ -206,21 +202,21 @@ func (a *app) onKeyPressMsg(msg tea.KeyPressMsg) (*app, tea.Cmd) {
 
 	var cmd tea.Cmd
 
-	if a.focusOnItemsView {
-		if key.Matches(msg, a.hotkey.NextCategory) {
-			index := slices.Index(a.categories, a.current)
-			index = min(index+1, len(a.categories)-1)
-			return a, a.updateCurrentCategory(index)
-		}
-
-		if key.Matches(msg, a.hotkey.PrevCategory) {
-			index := slices.Index(a.categories, a.current)
-			index = max(index-1, 0)
-			return a, a.updateCurrentCategory(index)
-		}
-	} else {
+	if a.commentsView != nil && !a.focusOnItemsView {
 		a.commentsView, cmd = a.commentsView.Update(msg)
 		return a, cmd
+	}
+
+	if key.Matches(msg, a.hotkey.NextCategory) {
+		index := slices.Index(a.categories, a.current)
+		index = min(index+1, len(a.categories)-1)
+		return a, a.updateCurrentCategory(index)
+	}
+
+	if key.Matches(msg, a.hotkey.PrevCategory) {
+		index := slices.Index(a.categories, a.current)
+		index = max(index-1, 0)
+		return a, a.updateCurrentCategory(index)
 	}
 
 	a.itemsViews[a.current], cmd = a.itemsViews[a.current].Update(msg)

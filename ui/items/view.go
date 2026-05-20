@@ -135,22 +135,20 @@ func (t *View) onItemsMsg(msg itemsMsg) (*View, tea.Cmd) {
 }
 
 func (t *View) onKeyPressMsg(msg tea.KeyPressMsg) (*View, tea.Cmd) {
-	if !key.Matches(msg, t.hotkey.OpenComments) {
-		return t, nil
-	}
-
-	index := t.model.Index()
-	if index < 0 || index >= len(t.model.Items()) {
-		return t, nil
-	}
-
-	switch i := t.model.Items()[index].(type) {
-	case listItem:
-		return t, func() tea.Msg {
-			return ItemSelectedMsg(i.Item)
+	if key.Matches(msg, t.hotkey.OpenComments) {
+		index := t.model.Index()
+		if index < 0 || index >= len(t.model.Items()) {
+			return t, nil
 		}
-	case loadMoreItem:
-		return t, t.fetchMore()
+
+		switch i := t.model.Items()[index].(type) {
+		case listItem:
+			return t, func() tea.Msg {
+				return ItemSelectedMsg(i.Item)
+			}
+		case loadMoreItem:
+			return t, t.fetchMore()
+		}
 	}
 
 	var cmd tea.Cmd

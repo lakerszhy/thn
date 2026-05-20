@@ -8,6 +8,7 @@ require (
 	charm.land/lipgloss/v2 v2.0.3
 	firebase.google.com/go/v4 v4.19.0
 	github.com/JohannesKaufmann/html-to-markdown/v2 v2.5.1
+	github.com/adrg/xdg v0.5.3
 	github.com/charmbracelet/x/ansi v0.11.7
 	github.com/dustin/go-humanize v1.0.1
 	golang.org/x/sync v0.20.0

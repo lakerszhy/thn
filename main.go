@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
-	"log"
+	"fmt"
+	"log/slog"
+	"os"
 
 	tea "charm.land/bubbletea/v2"
 
@@ -13,11 +15,20 @@ import (
 
 func main() {
 	if err := run(); err != nil {
-		log.Fatal(err)
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
 	}
 }
 
 func run() error {
+	logFile, err := config.InitLogger()
+	if err != nil {
+		return err
+	}
+	defer logFile.Close()
+
+	slog.Info("THN starting up....")
+
 	client, err := hn.New(context.Background())
 	if err != nil {
 		return err

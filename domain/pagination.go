@@ -2,7 +2,6 @@ package domain
 
 const defaultPageSize = 50
 
-// TODO: unexported?
 type Pagination struct {
 	page       int // start at 0
 	pageSize   int

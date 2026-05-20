@@ -405,7 +405,7 @@ linters:
       # https://github.com/go-simpler/sloglint#no-global-logger
       # Values: "all", "default"
       # Default: "" (disabled)
-      no-global: all
+      no-global: ""
       # Report the use of functions without a context.Context.
       # https://github.com/go-simpler/sloglint#context-only
       # Values: "all", "scope"

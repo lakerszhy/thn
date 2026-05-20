@@ -2,6 +2,7 @@ package config
 
 import "charm.land/bubbles/v2/key"
 
+//nolint:gochecknoglobals // default hotkey set
 var Hotkeys = Hotkey{
 	PrevCategory: key.NewBinding(key.WithKeys("shift+tab")),
 	NextCategory: key.NewBinding(key.WithKeys("tab")),

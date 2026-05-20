@@ -151,7 +151,7 @@ func (c *View) fetchItem() tea.Cmd {
 	return tea.Batch(cmds...)
 }
 
-func (c View) fetchComments() tea.Cmd {
+func (c *View) fetchComments() tea.Cmd {
 	if c.itemMsg.state != stateLoadSuccess {
 		return nil
 	}
@@ -175,7 +175,7 @@ func (c View) fetchComments() tea.Cmd {
 	return tea.Batch(cmds...)
 }
 
-func (c View) fetchChildren(parentID int64, ids []int64) tea.Cmd {
+func (c *View) fetchChildren(parentID int64, ids []int64) tea.Cmd {
 	if c.itemMsg.state != stateLoadSuccess {
 		return nil
 	}

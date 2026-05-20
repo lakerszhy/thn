@@ -6,6 +6,7 @@ import (
 	"charm.land/lipgloss/v2"
 )
 
+//nolint:gochecknoglobals // this is a constant theme.
 var HackerNewsTheme = Theme{
 	TitleBar: TitleBarTheme{
 		Border: BorderTheme{

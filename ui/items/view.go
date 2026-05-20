@@ -142,7 +142,7 @@ func (t *View) SetSize(width int, height int) {
 	t.model.SetHeight(height)
 }
 
-func (t View) fetch() tea.Cmd {
+func (t *View) fetch() tea.Cmd {
 	var cmds []tea.Cmd
 
 	cmd := func() tea.Msg {

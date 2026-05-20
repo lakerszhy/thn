@@ -34,7 +34,7 @@ type app struct {
 	windowHeight int
 }
 
-func NewApp(client *hn.Client, theme config.Theme, hotkey config.Hotkey) *app {
+func NewApp(client *hn.Client, theme config.Theme, hotkey config.Hotkey) tea.Model {
 	return &app{
 		client:            client,
 		theme:             theme,
@@ -167,7 +167,7 @@ func (a *app) updateSize() {
 	}
 }
 
-func (a app) renderCategories() string {
+func (a *app) renderCategories() string {
 	catStyle := lipgloss.NewStyle().Padding(0, 1)
 
 	categories := make([]string, len(a.categories))

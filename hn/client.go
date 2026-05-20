@@ -13,6 +13,8 @@ import (
 	"github.com/lakerszhy/thn/domain"
 )
 
+const defaultMaxConcurrency = 20
+
 type Client struct {
 	db *db.Client
 
@@ -40,7 +42,7 @@ func New(ctx context.Context) (*Client, error) {
 	return &Client{
 		db:        client,
 		cache:     make(map[domain.Category][]int64),
-		semaphore: make(chan struct{}, 20),
+		semaphore: make(chan struct{}, defaultMaxConcurrency),
 	}, nil
 }
 

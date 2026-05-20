@@ -89,7 +89,7 @@ func newDeletage(t config.Theme) *delegate {
 	}
 }
 
-func (d delegate) Render(w io.Writer, m list.Model, index int, item list.Item) {
+func (d *delegate) Render(w io.Writer, m list.Model, index int, item list.Item) {
 	if m.Width() <= 0 {
 		return
 	}
@@ -135,11 +135,11 @@ func (d delegate) Render(w io.Writer, m list.Model, index int, item list.Item) {
 	fmt.Fprintf(w, "%s\n%s", title, desc)
 }
 
-func (d delegate) Height() int {
+func (d *delegate) Height() int {
 	return 2
 }
 
-func (d delegate) Spacing() int {
+func (d *delegate) Spacing() int {
 	return 0
 }
 
@@ -151,7 +151,7 @@ func (d *delegate) Update(msg tea.Msg, _ *list.Model) tea.Cmd {
 	return nil
 }
 
-func (d delegate) renderLoadMore(selected bool) string {
+func (d *delegate) renderLoadMore(selected bool) string {
 	content := "More"
 	switch d.msg.state {
 	case stateLoadingMore:

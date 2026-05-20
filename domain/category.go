@@ -1,5 +1,6 @@
 package domain
 
+//nolint:gochecknoglobals // this is a constant set of categories
 var (
 	CategoryTop  Category = "Top"
 	CategoryNew  Category = "New"

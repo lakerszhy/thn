@@ -1,12 +1,14 @@
 package domain
 
+const defaultPageSize = 50
+
 type Pagination struct {
 	page     int // start at 0
 	pageSize int
 }
 
 func NewPagination() Pagination {
-	return Pagination{page: 0, pageSize: 50}
+	return Pagination{page: 0, pageSize: defaultPageSize}
 }
 
 func (p Pagination) Next() Pagination {
@@ -21,11 +23,7 @@ func (p Pagination) Range(total int) (int, int) {
 		return total, total
 	}
 
-	end := start + p.pageSize
-
-	if end > total {
-		end = total
-	}
+	end := min(start+p.pageSize, total)
 
 	return start, end
 }

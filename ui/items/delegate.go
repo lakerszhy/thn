@@ -75,7 +75,7 @@ type delegate struct {
 }
 
 func newDeletage(t config.Theme) *delegate {
-	// 6: 1 for ">", 3 for index, 1 for ".", 1 for space
+	//nolint:mnd // 6: 1 for ">", 3 for index, 1 for ".", 1 for space
 	desc := lipgloss.NewStyle().PaddingLeft(6)
 	return &delegate{
 		// 1 for ">"
@@ -136,7 +136,7 @@ func (d *delegate) Render(w io.Writer, m list.Model, index int, item list.Item) 
 }
 
 func (d *delegate) Height() int {
-	return 2
+	return 2 //nolint:mnd // height of item
 }
 
 func (d *delegate) Spacing() int {

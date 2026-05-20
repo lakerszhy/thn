@@ -162,7 +162,7 @@ func (t *View) fetch() tea.Cmd {
 	return tea.Batch(cmds...)
 }
 
-func (t View) fetchMore() tea.Cmd {
+func (t *View) fetchMore() tea.Cmd {
 	if t.msg.state == stateLoading || t.msg.state == stateLoadingMore {
 		return nil
 	}

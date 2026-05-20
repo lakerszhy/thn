@@ -158,7 +158,7 @@ func (a *app) updateSize() {
 
 	a.itemsViewStyle = a.itemsViewStyle.Width(itemsWidth)
 
-	// 2 for category bar
+	//nolint:mnd // 2 for category bar
 	itemsHeight := a.windowHeight - a.itemsViewStyle.GetVerticalBorderSize() - 2
 	itemsWidth -= a.itemsViewStyle.GetHorizontalFrameSize()
 

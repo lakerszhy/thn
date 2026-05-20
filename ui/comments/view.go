@@ -165,7 +165,7 @@ func (c *View) fetchComments() tea.Cmd {
 	return tea.Batch(cmds...)
 }
 
-func (c *View) fetchSubComments(parentID int64, ids []int64) tea.Cmd {
+func (c *View) fetchSubComments(comment domain.Comment) tea.Cmd {
 	if c.itemMsg.state != stateLoadSuccess {
 		return nil
 	}
@@ -173,16 +173,16 @@ func (c *View) fetchSubComments(parentID int64, ids []int64) tea.Cmd {
 	var cmds []tea.Cmd
 
 	cmd := func() tea.Msg {
-		return newSubCommentsLoadingMsg(c.itemID, parentID)
+		return newSubCommentsLoadingMsg(c.itemID, comment.ID)
 	}
 	cmds = append(cmds, cmd)
 
 	cmd = func() tea.Msg {
-		items, err := c.client.FetchComments(context.Background(), ids)
+		items, err := c.client.FetchComments(context.Background(), comment.KIDs)
 		if err != nil {
-			return newSubCommentsLoadFailedMsg(c.itemID, parentID, err)
+			return newSubCommentsLoadFailedMsg(c.itemID, comment.ID, err)
 		}
-		return newSubCommentsLoadSuccessMsg(c.itemID, parentID, items)
+		return newSubCommentsLoadSuccessMsg(c.itemID, comment.ID, items)
 	}
 	cmds = append(cmds, cmd)
 
@@ -217,12 +217,12 @@ func (c *View) onCommentsMsg(msg commentsMsg) (*View, tea.Cmd) {
 	// sub comments of some comment
 	switch msg.state {
 	case stateLoading:
-		c.tree.StartLoading(msg.parentID)
+		c.tree.StartLoading(msg.commentID)
 		cmd = c.spinner.Tick
 	case stateLoadSuccess:
-		c.tree.SetChildren(msg.parentID, msg.comments)
+		c.tree.SetChildren(msg.commentID, msg.comments)
 	case stateLoadFailed:
-		c.tree.FailLoading(msg.parentID, msg.err)
+		c.tree.FailLoading(msg.commentID, msg.err)
 	}
 
 	c.render()
@@ -412,11 +412,11 @@ func (c *View) ensureSelectedVisible() {
 
 func (c *View) onKeyPressMsg(msg tea.KeyPressMsg) (*View, tea.Cmd) {
 	if key.Matches(msg, c.hotkey.ToggleSubComments) {
-		req := c.tree.ToggleSelected()
+		comment := c.tree.ToggleSelected()
 		c.render()
 		c.ensureSelectedVisible()
-		if req.ok {
-			return c, c.fetchSubComments(req.parentID, req.ids)
+		if comment != nil {
+			return c, c.fetchSubComments(*comment)
 		}
 		return c, nil
 	}

@@ -40,32 +40,30 @@ func newItemLoadFailedMsg(itemID int64, err error) itemMsg {
 	}
 }
 
-// If parentID == itemID, it is the comments of the item whose id is itemID.
-// If parentID != itemID, it is sub comments of the comment whose id is parentID.
+// If commentID is zero, it is the comments of the item whose id is itemID.
+// If commentID is not zero, it is sub comments of the comment whose id is *commentID.
 type commentsMsg struct {
-	itemID   int64
-	parentID int64
-	comments []domain.Comment
-	state    state
-	err      error
+	itemID    int64
+	commentID int64
+	comments  []domain.Comment
+	state     state
+	err       error
 }
 
 func (m commentsMsg) isRoot() bool {
-	return m.parentID == m.itemID
+	return m.commentID == 0
 }
 
 func newCommentsLoadingMsg(itemID int64) commentsMsg {
 	return commentsMsg{
-		itemID:   itemID,
-		parentID: itemID,
-		state:    stateLoading,
+		itemID: itemID,
+		state:  stateLoading,
 	}
 }
 
 func newCommentsLoadSuccessMsg(itemID int64, comments []domain.Comment) commentsMsg {
 	return commentsMsg{
 		itemID:   itemID,
-		parentID: itemID,
 		state:    stateLoadSuccess,
 		comments: comments,
 	}
@@ -73,35 +71,34 @@ func newCommentsLoadSuccessMsg(itemID int64, comments []domain.Comment) comments
 
 func newCommentsLoadFailedMsg(itemID int64, err error) commentsMsg {
 	return commentsMsg{
-		itemID:   itemID,
-		parentID: itemID,
-		state:    stateLoadFailed,
-		err:      err,
+		itemID: itemID,
+		state:  stateLoadFailed,
+		err:    err,
 	}
 }
 
-func newSubCommentsLoadingMsg(itemID int64, parentID int64) commentsMsg {
+func newSubCommentsLoadingMsg(itemID int64, commentID int64) commentsMsg {
 	return commentsMsg{
-		itemID:   itemID,
-		parentID: parentID,
-		state:    stateLoading,
+		itemID:    itemID,
+		commentID: commentID,
+		state:     stateLoading,
 	}
 }
 
-func newSubCommentsLoadSuccessMsg(itemID int64, parentID int64, comments []domain.Comment) commentsMsg {
+func newSubCommentsLoadSuccessMsg(itemID int64, commentID int64, comments []domain.Comment) commentsMsg {
 	return commentsMsg{
-		itemID:   itemID,
-		parentID: parentID,
-		state:    stateLoadSuccess,
-		comments: comments,
+		itemID:    itemID,
+		commentID: commentID,
+		state:     stateLoadSuccess,
+		comments:  comments,
 	}
 }
 
-func newSubCommentsLoadFailedMsg(itemID int64, parentID int64, err error) commentsMsg {
+func newSubCommentsLoadFailedMsg(itemID int64, commentID int64, err error) commentsMsg {
 	return commentsMsg{
-		itemID:   itemID,
-		parentID: parentID,
-		state:    stateLoadFailed,
-		err:      err,
+		itemID:    itemID,
+		commentID: commentID,
+		state:     stateLoadFailed,
+		err:       err,
 	}
 }

@@ -1,10 +1,6 @@
 package comments
 
-import (
-	"log/slog"
-
-	"github.com/lakerszhy/thn/domain"
-)
+import "github.com/lakerszhy/thn/domain"
 
 type node struct {
 	comment  domain.Comment
@@ -18,12 +14,6 @@ type visible struct {
 	id    int64
 	depth int
 	line  int
-}
-
-type fetchRequest struct {
-	parentID int64
-	ids      []int64
-	ok       bool
 }
 
 type tree struct {
@@ -68,15 +58,15 @@ func (t *tree) SetRoots(comments []domain.Comment) {
 	t.rebuildVisible()
 }
 
-func (t *tree) StartLoading(parentID int64) {
-	if node := t.nodes[parentID]; node != nil {
+func (t *tree) StartLoading(commentID int64) {
+	if node := t.nodes[commentID]; node != nil {
 		node.loading = true
 		node.err = nil
 	}
 }
 
-func (t *tree) SetChildren(parentID int64, comments []domain.Comment) {
-	parent := t.nodes[parentID]
+func (t *tree) SetChildren(commentID int64, comments []domain.Comment) {
+	parent := t.nodes[commentID]
 	if parent == nil {
 		return
 	}
@@ -85,43 +75,37 @@ func (t *tree) SetChildren(parentID int64, comments []domain.Comment) {
 	parent.loading = false
 	parent.err = nil
 	for _, comment := range comments {
-		// TODO:
-		slog.Debug("test for parent id", "parentid", parentID, "comment_pid", comment.Parent)
 		t.upsertComment(comment)
 	}
 	t.rebuildVisible()
 }
 
-func (t *tree) FailLoading(parentID int64, err error) {
-	if node := t.nodes[parentID]; node != nil {
+func (t *tree) FailLoading(commentID int64, err error) {
+	if node := t.nodes[commentID]; node != nil {
 		node.loading = false
 		node.err = err
 	}
 }
 
-func (t *tree) ToggleSelected() fetchRequest {
+func (t *tree) ToggleSelected() *domain.Comment {
 	node := t.nodes[t.selectedID]
 	if node == nil || len(node.comment.KIDs) == 0 {
-		return fetchRequest{}
+		return nil
 	}
 
 	if node.expanded {
 		node.expanded = false
 		t.rebuildVisible()
-		return fetchRequest{}
+		return nil
 	}
 
 	node.expanded = true
 	t.rebuildVisible()
 	if node.loaded || node.loading {
-		return fetchRequest{}
+		return nil
 	}
 
-	return fetchRequest{
-		parentID: node.comment.ID,
-		ids:      node.comment.KIDs,
-		ok:       true,
-	}
+	return &node.comment
 }
 
 func (t *tree) SelectVisible(delta int) {
@@ -200,15 +184,6 @@ func (t *tree) SetVisibleLine(id int64, line int) {
 			return
 		}
 	}
-}
-
-func (t *tree) HasLoading() bool {
-	for _, node := range t.nodes {
-		if node.loading {
-			return true
-		}
-	}
-	return false
 }
 
 func (t *tree) upsertComment(comment domain.Comment) {

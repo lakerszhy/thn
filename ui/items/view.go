@@ -75,55 +75,12 @@ func (t *View) Update(msg tea.Msg) (*View, tea.Cmd) {
 		}
 		return t, cmd
 	case itemsMsg:
-		if msg.category != t.category {
-			return t, nil
-		}
-
-		t.msg = msg
-
-		switch msg.state {
-		case stateLoading, stateLoadFailed:
-			t.model.SetItems(nil)
-			return t, nil
-		case stateLoadSuccess:
-			items := make([]list.Item, len(msg.items)+1)
-			for i, v := range msg.items {
-				items[i] = listItem{Item: v}
-			}
-			items[len(items)-1] = loadMoreItem{}
-			t.model.SetItems(items)
-		case stateLoadMoreSuccess:
-			t.pagination = t.pagination.Next()
-
-			items := make([]list.Item, 0, len(msg.items)+len(t.msg.items))
-			items = append(items, t.model.Items()[0:len(t.model.Items())-1]...)
-			for _, v := range msg.items {
-				items = append(items, listItem{Item: v})
-			}
-			items = append(items, loadMoreItem{})
-			t.model.SetItems(items)
-		}
-		// handle by delegate, so not return
+		return t.onItemsMsg(msg)
 	case tea.KeyPressMsg:
-		if key.Matches(msg, t.hotkey.OpenComments) {
-			index := t.model.Index()
-			if index < 0 || index >= len(t.model.Items()) {
-				return t, nil
-			}
-
-			switch i := t.model.Items()[index].(type) {
-			case listItem:
-				return t, func() tea.Msg {
-					return ItemSelectedMsg(i.Item)
-				}
-			case loadMoreItem:
-				return t, t.fetchMore()
-			}
-		}
+		return t.onKeyPressMsg(msg)
 	}
 
-	t.model, cmd = t.model.Update(msg)
-	return t, cmd
+	return t, nil
 }
 
 func (t *View) View() string {
@@ -140,6 +97,65 @@ func (t *View) View() string {
 func (t *View) SetSize(width int, height int) {
 	t.model.SetWidth(width)
 	t.model.SetHeight(height)
+}
+
+func (t *View) onItemsMsg(msg itemsMsg) (*View, tea.Cmd) {
+	if msg.category != t.category {
+		return t, nil
+	}
+
+	t.msg = msg
+
+	switch msg.state {
+	case stateLoading, stateLoadFailed:
+		t.model.SetItems(nil)
+	case stateLoadSuccess:
+		items := make([]list.Item, len(msg.items)+1)
+		for i, v := range msg.items {
+			items[i] = listItem{Item: v}
+		}
+		items[len(items)-1] = loadMoreItem{}
+		t.model.SetItems(items)
+	case stateLoadMoreSuccess:
+		t.pagination = t.pagination.Next()
+
+		items := make([]list.Item, 0, len(msg.items)+len(t.msg.items))
+		items = append(items, t.model.Items()[0:len(t.model.Items())-1]...)
+		for _, v := range msg.items {
+			items = append(items, listItem{Item: v})
+		}
+		items = append(items, loadMoreItem{})
+		t.model.SetItems(items)
+	}
+
+	// handle by delegate
+	var cmd tea.Cmd
+	t.model, cmd = t.model.Update(msg)
+	return t, cmd
+}
+
+func (t *View) onKeyPressMsg(msg tea.KeyPressMsg) (*View, tea.Cmd) {
+	if !key.Matches(msg, t.hotkey.OpenComments) {
+		return t, nil
+	}
+
+	index := t.model.Index()
+	if index < 0 || index >= len(t.model.Items()) {
+		return t, nil
+	}
+
+	switch i := t.model.Items()[index].(type) {
+	case listItem:
+		return t, func() tea.Msg {
+			return ItemSelectedMsg(i.Item)
+		}
+	case loadMoreItem:
+		return t, t.fetchMore()
+	}
+
+	var cmd tea.Cmd
+	t.model, cmd = t.model.Update(msg)
+	return t, cmd
 }
 
 func (t *View) fetch() tea.Cmd {

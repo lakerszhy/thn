@@ -1,6 +1,8 @@
 package domain
 
 import (
+	"fmt"
+	"log/slog"
 	"net/url"
 	"strings"
 	"time"
@@ -33,6 +35,18 @@ type Item struct {
 	Descendants int64
 }
 
+func (i Item) Description() string {
+	v := fmt.Sprintf("%d points by %s %s", i.Score, i.By, i.TimeAgo())
+
+	if i.Descendants == 1 {
+		v = fmt.Sprintf("%s | 1 comment", v)
+	} else if i.Descendants > 1 {
+		v = fmt.Sprintf("%s | %d comments", v, i.Descendants)
+	}
+
+	return v
+}
+
 func (i Item) Domain() string {
 	if i.URL == "" {
 		return ""
@@ -40,7 +54,7 @@ func (i Item) Domain() string {
 
 	u, err := url.Parse(i.URL)
 	if err != nil {
-		// TODO: should log
+		slog.Error("fail to parse url", "id", i.ID, "url", i.URL, "error", err)
 		return ""
 	}
 

@@ -21,18 +21,6 @@ func (listItem) FilterValue() string {
 	return ""
 }
 
-func (l listItem) Description() string {
-	v := fmt.Sprintf("%d points by %s %s", l.Score, l.By, l.TimeAgo())
-
-	if l.Descendants == 1 {
-		v = fmt.Sprintf("%s | 1 comment", v)
-	} else if l.Descendants > 1 {
-		v = fmt.Sprintf("%s | %d comments", v, l.Descendants)
-	}
-
-	return v
-}
-
 type loadMoreItem struct {
 }
 

@@ -248,7 +248,7 @@ func (c *View) renderItemHeader() string {
 	wrappedTitle := lipgloss.NewStyle().Width(max(1, c.model.Width()-2)).Render(titleText)
 	fmt.Fprintln(&s, titleStyle.Render(wrappedTitle))
 
-	desc := fmt.Sprintf("%d points by %s %s", c.itemMsg.item.Score, c.itemMsg.item.By, c.itemMsg.item.TimeAgo())
+	desc := c.itemMsg.item.Description()
 	if c.itemMsg.item.Descendants == 1 {
 		desc = fmt.Sprintf("%s | 1 comment", desc)
 	} else if c.itemMsg.item.Descendants > 1 {

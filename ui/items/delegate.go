@@ -10,6 +10,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
+
 	"github.com/lakerszhy/thn/config"
 	"github.com/lakerszhy/thn/domain"
 )
@@ -61,8 +62,6 @@ func (l loadMoreItem) FilterValue() string {
 }
 
 type delegate struct {
-	theme config.Theme
-
 	normalTitle    lipgloss.Style
 	selectedTitle  lipgloss.Style
 	normalDesc     lipgloss.Style
@@ -144,11 +143,11 @@ func (d delegate) Spacing() int {
 	return 0
 }
 
-func (d *delegate) Update(msg tea.Msg, m *list.Model) tea.Cmd {
-	switch msg := msg.(type) {
-	case itemsMsg:
+func (d *delegate) Update(msg tea.Msg, _ *list.Model) tea.Cmd {
+	if msg, ok := msg.(itemsMsg); ok {
 		d.msg = msg
 	}
+
 	return nil
 }
 
@@ -168,5 +167,5 @@ func (d delegate) renderLoadMore(selected bool) string {
 		content = d.normalTitle.Render(content)
 	}
 
-	return fmt.Sprintf("%s", content)
+	return content
 }

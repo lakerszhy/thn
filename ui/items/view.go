@@ -9,6 +9,7 @@ import (
 	"charm.land/bubbles/v2/spinner"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+
 	"github.com/lakerszhy/thn/config"
 	"github.com/lakerszhy/thn/domain"
 	"github.com/lakerszhy/thn/hn"
@@ -23,9 +24,7 @@ type View struct {
 	msg        itemsMsg
 	spinner    spinner.Model
 
-	model  list.Model
-	width  int
-	height int
+	model list.Model
 }
 
 func NewView(category domain.Category, client *hn.Client, theme config.Theme, hotkey config.Hotkey) *View {

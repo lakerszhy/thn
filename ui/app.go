@@ -7,6 +7,7 @@ import (
 	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+
 	"github.com/lakerszhy/thn/config"
 	"github.com/lakerszhy/thn/domain"
 	"github.com/lakerszhy/thn/hn"
@@ -159,7 +160,7 @@ func (a *app) updateSize() {
 
 	// 2 for category bar
 	itemsHeight := a.windowHeight - a.itemsViewStyle.GetVerticalBorderSize() - 2
-	itemsWidth = itemsWidth - a.itemsViewStyle.GetHorizontalFrameSize()
+	itemsWidth -= a.itemsViewStyle.GetHorizontalFrameSize()
 
 	for _, v := range a.itemsViews {
 		v.SetSize(itemsWidth, itemsHeight)

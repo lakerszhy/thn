@@ -8,6 +8,7 @@ import (
 
 type Item struct {
 	Base
+
 	Type        string
 	Text        string
 	Parent      int64
@@ -22,6 +23,7 @@ type Item struct {
 
 type Comment struct {
 	Base
+
 	Text        string
 	Parent      int64
 	Descendants int64

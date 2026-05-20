@@ -90,13 +90,13 @@ func (c *View) Update(msg tea.Msg) (*View, tea.Cmd) {
 		}
 		return c, cmd
 	case commentsMsg:
-		if msg.item.ID != c.itemID {
+		if msg.itemID != c.itemID {
 			return c, nil
 		}
 
 		c.msg = msg
 		c.applyCommentsMsg(msg)
-		if msg.state == stateLoadingChildren {
+		if msg.state == stateLoading {
 			return c, c.spinner.Tick
 		}
 		return c, nil
@@ -158,23 +158,23 @@ func (c *View) fetchComments() tea.Cmd {
 	var cmds []tea.Cmd
 
 	cmd := func() tea.Msg {
-		return newCommentsLoadingMsg(c.itemMsg.item)
+		return newCommentsLoadingMsg(c.itemID)
 	}
 	cmds = append(cmds, cmd)
 
 	cmd = func() tea.Msg {
 		items, err := c.client.FetchComments(context.Background(), c.itemMsg.item.KIDs)
 		if err != nil {
-			return newCommentsLoadFailedMsg(c.itemMsg.item, err)
+			return newCommentsLoadFailedMsg(c.itemID, err)
 		}
-		return newCommentsLoadSuccessMsg(c.itemMsg.item, items)
+		return newCommentsLoadSuccessMsg(c.itemID, items)
 	}
 	cmds = append(cmds, cmd)
 
 	return tea.Batch(cmds...)
 }
 
-func (c *View) fetchChildren(parentID int64, ids []int64) tea.Cmd {
+func (c *View) fetchSubComments(parentID int64, ids []int64) tea.Cmd {
 	if c.itemMsg.state != stateLoadSuccess {
 		return nil
 	}
@@ -182,16 +182,16 @@ func (c *View) fetchChildren(parentID int64, ids []int64) tea.Cmd {
 	var cmds []tea.Cmd
 
 	cmd := func() tea.Msg {
-		return newCommentsLoadingChildrenMsg(c.itemMsg.item, parentID)
+		return newSubCommentsLoadingMsg(c.itemID, parentID)
 	}
 	cmds = append(cmds, cmd)
 
 	cmd = func() tea.Msg {
 		items, err := c.client.FetchComments(context.Background(), ids)
 		if err != nil {
-			return newCommentsLoadChildrenFailedMsg(c.itemMsg.item, parentID, err)
+			return newSubCommentsLoadFailedMsg(c.itemID, parentID, err)
 		}
-		return newCommentsLoadChildrenSuccessMsg(c.itemMsg.item, parentID, items)
+		return newSubCommentsLoadSuccessMsg(c.itemID, parentID, items)
 	}
 	cmds = append(cmds, cmd)
 
@@ -199,6 +199,7 @@ func (c *View) fetchChildren(parentID int64, ids []int64) tea.Cmd {
 }
 
 func (c *View) applyCommentsMsg(msg commentsMsg) {
+	// comments of item
 	if msg.parentID == c.itemID {
 		switch msg.state {
 		case stateLoading:
@@ -214,12 +215,13 @@ func (c *View) applyCommentsMsg(msg commentsMsg) {
 		return
 	}
 
+	// sub comments of some comment
 	switch msg.state {
-	case stateLoadingChildren:
+	case stateLoading:
 		c.tree.StartLoading(msg.parentID)
-	case stateLoadChildrenSuccess:
+	case stateLoadSuccess:
 		c.tree.SetChildren(msg.parentID, msg.comments)
-	case stateLoadChildrenFailed:
+	case stateLoadFailed:
 		c.tree.FailLoading(msg.parentID, msg.err)
 	}
 
@@ -416,7 +418,7 @@ func (c *View) onKeyPressMsg(msg tea.KeyPressMsg) (*View, tea.Cmd) {
 		c.render()
 		c.ensureSelectedVisible()
 		if req.ok {
-			return c, c.fetchChildren(req.parentID, req.ids)
+			return c, c.fetchSubComments(req.parentID, req.ids)
 		}
 		return c, nil
 	}

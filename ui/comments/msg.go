@@ -6,10 +6,6 @@ const (
 	stateLoading = iota
 	stateLoadSuccess
 	stateLoadFailed
-	// TODO: can delete these states?
-	stateLoadingChildren
-	stateLoadChildrenSuccess
-	stateLoadChildrenFailed
 )
 
 type state int
@@ -44,62 +40,64 @@ func newItemLoadFailedMsg(itemID int64, err error) itemMsg {
 	}
 }
 
+// if parentID == itemID, it is comments for the item which id is itemID
+// if parentID != itemID, it is sub comments for the comment which id is parentID
 type commentsMsg struct {
-	item     domain.Item
+	itemID   int64
 	parentID int64
 	comments []domain.Comment
 	state    state
 	err      error
 }
 
-func newCommentsLoadingMsg(item domain.Item) commentsMsg {
+func newCommentsLoadingMsg(itemID int64) commentsMsg {
 	return commentsMsg{
-		item:     item,
+		itemID:   itemID,
+		parentID: itemID,
 		state:    stateLoading,
-		parentID: item.ID,
 	}
 }
 
-func newCommentsLoadSuccessMsg(item domain.Item, comments []domain.Comment) commentsMsg {
+func newCommentsLoadSuccessMsg(itemID int64, comments []domain.Comment) commentsMsg {
 	return commentsMsg{
-		item:     item,
-		parentID: item.ID,
+		itemID:   itemID,
+		parentID: itemID,
 		state:    stateLoadSuccess,
 		comments: comments,
 	}
 }
 
-func newCommentsLoadFailedMsg(item domain.Item, err error) commentsMsg {
+func newCommentsLoadFailedMsg(itemID int64, err error) commentsMsg {
 	return commentsMsg{
-		item:     item,
-		parentID: item.ID,
+		itemID:   itemID,
+		parentID: itemID,
 		state:    stateLoadFailed,
 		err:      err,
 	}
 }
 
-func newCommentsLoadingChildrenMsg(item domain.Item, parentID int64) commentsMsg {
+func newSubCommentsLoadingMsg(itemID int64, parentID int64) commentsMsg {
 	return commentsMsg{
-		item:     item,
+		itemID:   itemID,
 		parentID: parentID,
-		state:    stateLoadingChildren,
+		state:    stateLoading,
 	}
 }
 
-func newCommentsLoadChildrenSuccessMsg(item domain.Item, parentID int64, comments []domain.Comment) commentsMsg {
+func newSubCommentsLoadSuccessMsg(itemID int64, parentID int64, comments []domain.Comment) commentsMsg {
 	return commentsMsg{
-		item:     item,
-		state:    stateLoadChildrenSuccess,
+		itemID:   itemID,
 		parentID: parentID,
+		state:    stateLoadSuccess,
 		comments: comments,
 	}
 }
 
-func newCommentsLoadChildrenFailedMsg(item domain.Item, parentID int64, err error) commentsMsg {
+func newSubCommentsLoadFailedMsg(itemID int64, parentID int64, err error) commentsMsg {
 	return commentsMsg{
-		item:     item,
-		state:    stateLoadChildrenFailed,
-		err:      err,
+		itemID:   itemID,
 		parentID: parentID,
+		state:    stateLoadFailed,
+		err:      err,
 	}
 }

@@ -242,27 +242,21 @@ func (c *View) renderItem() string {
 
 	var s strings.Builder
 
-	titleStyle := lipgloss.NewStyle().Padding(0, 1).
-		Width(max(1, c.model.Width())).Bold(true).
-		Foreground(c.theme.Item.TitleSelectedColor)
-	descStyle := lipgloss.NewStyle().Padding(0, 1).
-		Width(max(1, c.model.Width())).
-		Foreground(c.theme.Item.DescColor)
-
 	domain := c.itemMsg.item.Domain()
 	if domain != "" {
 		domain = fmt.Sprintf(" (%s)", domain)
 	}
 
 	titleText := fmt.Sprintf("%s%s", c.itemMsg.item.Title, domain)
+	titleStyle := lipgloss.NewStyle().Padding(0, 1).
+		Width(max(1, c.model.Width())).Bold(true).
+		Foreground(c.theme.Item.TitleSelectedColor)
 	fmt.Fprintln(&s, titleStyle.Render(titleText))
 
 	desc := c.itemMsg.item.Description()
-	if c.itemMsg.item.Descendants == 1 {
-		desc = fmt.Sprintf("%s | 1 comment", desc)
-	} else if c.itemMsg.item.Descendants > 1 {
-		desc = fmt.Sprintf("%s | %d comments", desc, c.itemMsg.item.Descendants)
-	}
+	descStyle := lipgloss.NewStyle().Padding(0, 1).
+		Width(max(1, c.model.Width())).
+		Foreground(c.theme.Item.DescColor)
 	fmt.Fprintln(&s, descStyle.Render(desc))
 
 	// If there is text in the item (e.g. Ask HN post content), convert it and display it!

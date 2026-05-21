@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"html"
+	"log/slog"
 	"strings"
 
 	"charm.land/bubbles/v2/key"
@@ -14,6 +15,7 @@ import (
 	"github.com/JohannesKaufmann/html-to-markdown/v2/converter"
 	"github.com/JohannesKaufmann/html-to-markdown/v2/plugin/base"
 	"github.com/JohannesKaufmann/html-to-markdown/v2/plugin/commonmark"
+	"github.com/pkg/browser"
 
 	"github.com/lakerszhy/thn/config"
 	"github.com/lakerszhy/thn/domain"
@@ -470,6 +472,47 @@ func (c *View) onKeyPressMsg(msg tea.KeyPressMsg) (*View, tea.Cmd) {
 		c.tree.SelectLast()
 		c.render()
 		c.ensureSelectedVisible()
+		return c, nil
+	}
+
+	if key.Matches(msg, c.hotkey.OpenHNInBrowser) {
+		if c.itemMsg.state != stateLoadSuccess {
+			return c, nil
+		}
+
+		if err := browser.OpenURL(c.itemMsg.item.URLInHN()); err != nil {
+			slog.Error("open item url failed", "id", c.itemMsg.item.ID, "url", c.itemMsg.item.URLInHN(), "error", err)
+		}
+
+		return c, nil
+	}
+
+	if key.Matches(msg, c.hotkey.OpenDomainInBrowser) {
+		if c.itemMsg.state != stateLoadSuccess {
+			return c, nil
+		}
+
+		if c.itemMsg.item.URL == "" {
+			return c, nil
+		}
+
+		if err := browser.OpenURL(c.itemMsg.item.URL); err != nil {
+			slog.Error("open item url failed", "id", c.itemMsg.item.ID, "url", c.itemMsg.item.URL, "error", err)
+		}
+
+		return c, nil
+	}
+
+	if key.Matches(msg, c.hotkey.OpenCommentInBrowser) {
+		node := c.tree.Node(c.tree.SelectedID())
+		if node == nil {
+			return c, nil
+		}
+
+		if err := browser.OpenURL(node.comment.URLInHN(c.itemMsg.item.ID)); err != nil {
+			slog.Error("open item url failed", "id", node.comment.ID, "url", node.comment.URLInHN(c.itemMsg.item.ID), "error", err)
+		}
+
 		return c, nil
 	}
 

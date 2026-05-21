@@ -22,6 +22,10 @@ var Hotkeys = Hotkey{
 	PrevSiblingComment: key.NewBinding(key.WithKeys("p")),
 	NextSiblingComment: key.NewBinding(key.WithKeys("n")),
 
+	OpenHNInBrowser:      key.NewBinding(key.WithKeys("o")),
+	OpenCommentInBrowser: key.NewBinding(key.WithKeys("ctrl+o")),
+	OpenDomainInBrowser:  key.NewBinding(key.WithKeys("O")),
+
 	GoToStart: key.NewBinding(key.WithKeys("home", "g")),
 	GoToEnd:   key.NewBinding(key.WithKeys("end", "G")),
 	Quit:      key.NewBinding(key.WithKeys("ctrl+c", "q")),
@@ -45,6 +49,10 @@ type Hotkey struct {
 	NextComment        key.Binding
 	PrevSiblingComment key.Binding
 	NextSiblingComment key.Binding
+
+	OpenHNInBrowser      key.Binding
+	OpenCommentInBrowser key.Binding
+	OpenDomainInBrowser  key.Binding
 
 	GoToStart key.Binding
 	GoToEnd   key.Binding

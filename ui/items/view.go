@@ -3,6 +3,7 @@ package items
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	"charm.land/bubbles/v2/key"
 	"charm.land/bubbles/v2/list"
@@ -13,6 +14,7 @@ import (
 	"github.com/lakerszhy/thn/config"
 	"github.com/lakerszhy/thn/domain"
 	"github.com/lakerszhy/thn/hn"
+	"github.com/pkg/browser"
 )
 
 type View struct {
@@ -139,12 +141,7 @@ func (t *View) onItemsLoaded(pagedItems domain.PagedItems) {
 
 func (t *View) onKeyPressMsg(msg tea.KeyPressMsg) (*View, tea.Cmd) {
 	if key.Matches(msg, t.hotkey.OpenComments) {
-		index := t.model.Index()
-		if index < 0 || index >= len(t.model.Items()) {
-			return t, nil
-		}
-
-		switch i := t.model.Items()[index].(type) {
+		switch i := t.model.SelectedItem().(type) {
 		case listItem:
 			return t, func() tea.Msg {
 				return ItemSelectedMsg(i.Item)
@@ -152,6 +149,40 @@ func (t *View) onKeyPressMsg(msg tea.KeyPressMsg) (*View, tea.Cmd) {
 		case loadMoreItem:
 			return t, t.fetchMore()
 		}
+	}
+
+	if key.Matches(msg, t.hotkey.OpenHNInBrowser) {
+		var item listItem
+		var ok bool
+
+		if item, ok = t.model.SelectedItem().(listItem); !ok {
+			return t, nil
+		}
+
+		if err := browser.OpenURL(item.URLInHN()); err != nil {
+			slog.Error("open item url failed", "id", item.ID, "url", item.URLInHN(), "error", err)
+		}
+
+		return t, nil
+	}
+
+	if key.Matches(msg, t.hotkey.OpenDomainInBrowser) {
+		var item listItem
+		var ok bool
+
+		if item, ok = t.model.SelectedItem().(listItem); !ok {
+			return t, nil
+		}
+
+		if item.URL == "" {
+			return t, nil
+		}
+
+		if err := browser.OpenURL(item.URL); err != nil {
+			slog.Error("open item url failed", "id", item.ID, "url", item.URL, "error", err)
+		}
+
+		return t, nil
 	}
 
 	var cmd tea.Cmd

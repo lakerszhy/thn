@@ -96,6 +96,10 @@ type Comment struct {
 	KIDs        []int64
 }
 
+func (c Comment) URLInHN(itemID int64) string {
+	return fmt.Sprintf("%s#%d", hnURL(itemID), c.ID)
+}
+
 type Base struct {
 	ID      int64
 	Time    int64
@@ -107,4 +111,12 @@ type Base struct {
 
 func (b Base) TimeAgo() string {
 	return humanize.Time(time.Unix(b.Time, 0))
+}
+
+func (b Base) URLInHN() string {
+	return hnURL(b.ID)
+}
+
+func hnURL(id int64) string {
+	return fmt.Sprintf("https://news.ycombinator.com/item?id=%d", id)
 }

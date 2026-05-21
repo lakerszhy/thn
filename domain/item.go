@@ -10,6 +10,16 @@ import (
 	"github.com/dustin/go-humanize"
 )
 
+const (
+	ItemTypeStory ItemType = iota
+	ItemTypeComment
+	ItemTypeJob
+	ItemTypePoll
+	ItemTypePollOpt
+)
+
+type ItemType int
+
 type PagedItems struct {
 	Pagination
 
@@ -23,7 +33,6 @@ func NewPagedItems(p Pagination, items []Item) PagedItems {
 type Item struct {
 	Base
 
-	Type        string
 	Text        string
 	Poll        int64
 	KIDs        []int64
@@ -39,7 +48,11 @@ func (i Item) HasComments() bool {
 }
 
 func (i Item) Description() string {
-	v := fmt.Sprintf("%d points by %s %s", i.Score, i.By, i.TimeAgo())
+	v := fmt.Sprintf("by %s %s", i.By, i.TimeAgo())
+
+	if i.Type != ItemTypeJob {
+		v = fmt.Sprintf("%d points %s", i.Score, v)
+	}
 
 	if i.Descendants == 1 {
 		v = fmt.Sprintf("%s | 1 comment", v)
@@ -87,6 +100,7 @@ type Base struct {
 	ID      int64
 	Time    int64
 	By      string
+	Type    ItemType
 	Deleted bool
 	Dead    bool
 }

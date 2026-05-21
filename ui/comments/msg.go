@@ -41,7 +41,7 @@ func newItemLoadFailedMsg(itemID int64, err error) itemMsg {
 }
 
 // If commentID is zero, it is the comments of the item whose id is itemID.
-// If commentID is not zero, it is sub comments of the comment whose id is *commentID.
+// If commentID is not zero, it is sub comments of the comment whose id is commentID.
 type commentsMsg struct {
 	itemID    int64
 	commentID int64

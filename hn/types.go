@@ -42,15 +42,30 @@ type item struct {
 }
 
 func (i item) ToDomain() domain.Item {
+	itemType := domain.ItemTypeStory
+
+	switch i.Type {
+	case "story":
+		itemType = domain.ItemTypeStory
+	case "comment":
+		itemType = domain.ItemTypeComment
+	case "job":
+		itemType = domain.ItemTypeJob
+	case "poll":
+		itemType = domain.ItemTypePoll
+	case "pollopt":
+		itemType = domain.ItemTypePollOpt
+	}
+
 	return domain.Item{
 		Base: domain.Base{
 			ID:      i.ID,
 			Time:    i.Time,
 			By:      i.By,
+			Type:    itemType,
 			Deleted: i.Deleted,
 			Dead:    i.Dead,
 		},
-		Type:        i.Type,
 		Text:        i.Text,
 		Poll:        i.Poll,
 		KIDs:        i.KIDs,

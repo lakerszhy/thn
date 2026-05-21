@@ -185,6 +185,10 @@ func (t *View) onKeyPressMsg(msg tea.KeyPressMsg) (*View, tea.Cmd) {
 		return t, nil
 	}
 
+	if key.Matches(msg, t.hotkey.Refresh) && t.msg.state != stateLoading {
+		return t, tea.Batch(t.spinner.Tick, t.fetch())
+	}
+
 	var cmd tea.Cmd
 	t.model, cmd = t.model.Update(msg)
 	return t, cmd
@@ -207,7 +211,8 @@ func (t *View) fetch() tea.Cmd {
 	}
 	cmds = append(cmds, cmd)
 
-	return tea.Batch(cmds...)
+	// If use tea.Batch, the spinner.Tick may not be executed.
+	return tea.Sequence(cmds...)
 }
 
 func (t *View) fetchMore() tea.Cmd {

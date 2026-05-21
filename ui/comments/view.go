@@ -18,6 +18,8 @@ import (
 	"github.com/lakerszhy/thn/hn"
 )
 
+const horizontalPadding = 2
+
 type View struct {
 	itemID int64
 	client *hn.Client
@@ -250,15 +252,13 @@ func (c *View) renderItem() string {
 
 	if c.itemMsg.item.Text != "" {
 		fmt.Fprintln(&s)
-		textStyle := lipgloss.NewStyle().
-			PaddingLeft(2).
-			Width(max(1, c.model.Width()-4)).
+		textStyle := lipgloss.NewStyle().Padding(0, horizontalPadding).
+			Width(max(1, c.model.Width()-2*horizontalPadding)).
 			Foreground(c.theme.Comment.ContentColor)
 		fmt.Fprintln(&s, textStyle.Render(c.itemMsg.item.Text))
 	}
 
-	separator := lipgloss.NewStyle().
-		Foreground(c.theme.TitleBar.DivideColor).
+	separator := lipgloss.NewStyle().Foreground(c.theme.TitleBar.DivideColor).
 		Render(strings.Repeat("─", max(1, c.model.Width())))
 	fmt.Fprintln(&s, separator)
 
@@ -362,11 +362,12 @@ func (c *View) renderCommentBody(comment domain.Comment, depth int) string {
 		content = "[empty]"
 	}
 
-	return lipgloss.NewStyle().
-		PaddingLeft(depth*2 + 2).
-		Width(max(1, c.model.Width()-depth*2-2)).
-		Foreground(c.theme.Comment.ContentColor).
-		Render(content)
+	leftPadding := (depth + 1) * horizontalPadding
+	rightPadding := horizontalPadding
+	width := c.model.Width() - leftPadding - rightPadding
+
+	return lipgloss.NewStyle().Width(width).Foreground(c.theme.Comment.ContentColor).
+		PaddingLeft(leftPadding).PaddingRight(rightPadding).Render(content)
 }
 
 func (c *View) ensureSelectedVisible() {

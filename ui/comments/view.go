@@ -146,6 +146,10 @@ func (c *View) fetchComments() tea.Cmd {
 		return nil
 	}
 
+	if !c.itemMsg.item.HasComments() {
+		return nil
+	}
+
 	var cmds []tea.Cmd
 
 	cmd := func() tea.Msg {
@@ -305,13 +309,17 @@ func (c *View) render() {
 
 	// 2. Render comments or loading comments state
 	if c.tree.RootCount() == 0 {
-		switch c.msg.state {
-		case stateLoading:
-			c.appendLines(&s, &line, fmt.Sprintf("  %s Loading comments...", c.spinner.View()))
-		case stateLoadFailed:
-			c.appendLines(&s, &line, fmt.Sprintf("  Load comments failed: %s", c.msg.err.Error()))
-		case stateLoadSuccess:
+		if !c.itemMsg.item.HasComments() {
 			c.appendLines(&s, &line, "  No comments")
+		} else {
+			switch c.msg.state {
+			case stateLoading:
+				c.appendLines(&s, &line, fmt.Sprintf("  %s Loading comments...", c.spinner.View()))
+			case stateLoadFailed:
+				c.appendLines(&s, &line, fmt.Sprintf("  Load comments failed: %s", c.msg.err.Error()))
+			case stateLoadSuccess:
+				c.appendLines(&s, &line, "  No comments")
+			}
 		}
 	} else {
 		for _, visible := range c.tree.Visible() {

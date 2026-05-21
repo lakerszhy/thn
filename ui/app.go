@@ -79,7 +79,6 @@ func (a *app) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case items.ItemSelectedMsg:
-		// TODO: how to handle when item has no comments
 		a.focusOnItemsView = false
 		a.commentsView = comments.NewView(domain.Item(msg).ID, a.client, a.theme, a.hotkey)
 		a.updateSize()

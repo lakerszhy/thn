@@ -34,6 +34,10 @@ type Item struct {
 	Descendants int64
 }
 
+func (i Item) HasComments() bool {
+	return len(i.KIDs) > 0
+}
+
 func (i Item) Description() string {
 	v := fmt.Sprintf("%d points by %s %s", i.Score, i.By, i.TimeAgo())
 

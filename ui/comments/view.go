@@ -304,11 +304,14 @@ func (c *View) render() {
 			c.appendLines(&s, &line, c.renderCommentBody(node.comment, visible.depth), "")
 
 			if node.expanded {
+				style := lipgloss.NewStyle().PaddingLeft((visible.depth + 1) * horizontalPadding)
 				if node.loading {
-					c.appendLines(&s, &line, fmt.Sprintf("%s%s Loading...", strings.Repeat("  ", visible.depth+1), c.spinner.View()), "")
+					v := fmt.Sprintf("%s Loading...", c.spinner.View())
+					c.appendLines(&s, &line, style.Render(v), "")
 				}
 				if node.err != nil {
-					c.appendLines(&s, &line, fmt.Sprintf("%sLoad failed: %s", strings.Repeat("  ", visible.depth+1), node.err.Error()), "")
+					v := fmt.Sprintf("Load failed: %s", node.err.Error())
+					c.appendLines(&s, &line, style.Render(v), "")
 				}
 			}
 		}

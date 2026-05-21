@@ -370,8 +370,7 @@ func (c *View) renderCommentBody(comment domain.Comment, depth int) string {
 }
 
 func (c *View) ensureSelectedVisible() {
-	visibleList := c.tree.Visible()
-	for i, visible := range visibleList {
+	for i, visible := range c.tree.Visible() {
 		if visible.id == c.tree.SelectedID() {
 			if i == 0 {
 				c.model.EnsureVisible(0, 0, 0)
@@ -384,105 +383,69 @@ func (c *View) ensureSelectedVisible() {
 }
 
 func (c *View) onKeyPressMsg(msg tea.KeyPressMsg) (*View, tea.Cmd) {
-	if key.Matches(msg, c.hotkey.ToggleSubComments) {
+	if c.itemMsg.state != stateLoadSuccess {
+		return c, nil
+	}
+
+	var cmd tea.Cmd
+	reRender := true
+
+	switch {
+	case key.Matches(msg, c.hotkey.ToggleSubComments):
 		comment := c.tree.ToggleSelected()
-		c.render()
-		c.ensureSelectedVisible()
 		if comment != nil {
-			return c, c.fetchSubComments(*comment)
+			cmd = c.fetchSubComments(*comment)
 		}
-		return c, nil
-	}
 
-	if key.Matches(msg, c.hotkey.SelectParent) {
+	case key.Matches(msg, c.hotkey.SelectParent):
 		c.tree.SelectParent()
-		c.render()
-		c.ensureSelectedVisible()
-		return c, nil
-	}
 
-	if key.Matches(msg, c.hotkey.PrevComment) {
+	case key.Matches(msg, c.hotkey.PrevComment):
 		c.tree.SelectVisible(-1)
-		c.render()
-		c.ensureSelectedVisible()
-		return c, nil
-	}
 
-	if key.Matches(msg, c.hotkey.NextComment) {
+	case key.Matches(msg, c.hotkey.NextComment):
 		c.tree.SelectVisible(1)
-		c.render()
-		c.ensureSelectedVisible()
-		return c, nil
-	}
 
-	if key.Matches(msg, c.hotkey.PrevSiblingComment) {
+	case key.Matches(msg, c.hotkey.PrevSiblingComment):
 		c.tree.SelectSibling(-1)
-		c.render()
-		c.ensureSelectedVisible()
-		return c, nil
-	}
 
-	if key.Matches(msg, c.hotkey.NextSiblingComment) {
+	case key.Matches(msg, c.hotkey.NextSiblingComment):
 		c.tree.SelectSibling(1)
-		c.render()
-		c.ensureSelectedVisible()
-		return c, nil
-	}
 
-	if key.Matches(msg, c.hotkey.GoToStart) {
+	case key.Matches(msg, c.hotkey.GoToStart):
 		c.tree.SelectFirst()
-		c.render()
-		c.ensureSelectedVisible()
-		return c, nil
-	}
 
-	if key.Matches(msg, c.hotkey.GoToEnd) {
+	case key.Matches(msg, c.hotkey.GoToEnd):
 		c.tree.SelectLast()
+
+	case key.Matches(msg, c.hotkey.OpenHNInBrowser):
+		reRender = false
+		c.openURL(c.itemMsg.item.URLInHN())
+
+	case key.Matches(msg, c.hotkey.OpenDomainInBrowser):
+		reRender = false
+		if c.itemMsg.item.URL != "" {
+			c.openURL(c.itemMsg.item.URL)
+		}
+
+	case key.Matches(msg, c.hotkey.OpenCommentInBrowser):
+		reRender = false
+		node := c.tree.Node(c.tree.SelectedID())
+		if node != nil {
+			c.openURL(node.comment.URLInHN(c.itemMsg.item.ID))
+		}
+	}
+
+	if reRender {
 		c.render()
 		c.ensureSelectedVisible()
-		return c, nil
 	}
 
-	if key.Matches(msg, c.hotkey.OpenHNInBrowser) {
-		if c.itemMsg.state != stateLoadSuccess {
-			return c, nil
-		}
+	return c, cmd
+}
 
-		if err := browser.OpenURL(c.itemMsg.item.URLInHN()); err != nil {
-			slog.Error("open item url failed", "id", c.itemMsg.item.ID, "url", c.itemMsg.item.URLInHN(), "error", err)
-		}
-
-		return c, nil
+func (c *View) openURL(u string) {
+	if err := browser.OpenURL(u); err != nil {
+		slog.Error("open url failed", "url", u, "error", err)
 	}
-
-	if key.Matches(msg, c.hotkey.OpenDomainInBrowser) {
-		if c.itemMsg.state != stateLoadSuccess {
-			return c, nil
-		}
-
-		if c.itemMsg.item.URL == "" {
-			return c, nil
-		}
-
-		if err := browser.OpenURL(c.itemMsg.item.URL); err != nil {
-			slog.Error("open item url failed", "id", c.itemMsg.item.ID, "url", c.itemMsg.item.URL, "error", err)
-		}
-
-		return c, nil
-	}
-
-	if key.Matches(msg, c.hotkey.OpenCommentInBrowser) {
-		node := c.tree.Node(c.tree.SelectedID())
-		if node == nil {
-			return c, nil
-		}
-
-		if err := browser.OpenURL(node.comment.URLInHN(c.itemMsg.item.ID)); err != nil {
-			slog.Error("open item url failed", "id", node.comment.ID, "url", node.comment.URLInHN(c.itemMsg.item.ID), "error", err)
-		}
-
-		return c, nil
-	}
-
-	return c, nil
 }

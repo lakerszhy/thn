@@ -235,7 +235,7 @@ func (c *View) onCommentsMsg(msg commentsMsg) (*View, tea.Cmd) {
 	return c, cmd
 }
 
-func (c *View) renderItemHeader() string {
+func (c *View) renderItem() string {
 	if c.itemMsg.state != stateLoadSuccess {
 		return ""
 	}
@@ -243,8 +243,11 @@ func (c *View) renderItemHeader() string {
 	var s strings.Builder
 
 	titleStyle := lipgloss.NewStyle().Padding(0, 1).
-		Foreground(c.theme.Item.TitleSelectedColor).Bold(true)
-	descStyle := lipgloss.NewStyle().Padding(0, 1).Foreground(c.theme.Item.DescColor)
+		Width(max(1, c.model.Width())).Bold(true).
+		Foreground(c.theme.Item.TitleSelectedColor)
+	descStyle := lipgloss.NewStyle().Padding(0, 1).
+		Width(max(1, c.model.Width())).
+		Foreground(c.theme.Item.DescColor)
 
 	domain := c.itemMsg.item.Domain()
 	if domain != "" {
@@ -252,9 +255,7 @@ func (c *View) renderItemHeader() string {
 	}
 
 	titleText := fmt.Sprintf("%s%s", c.itemMsg.item.Title, domain)
-	// Word wrap title based on viewport width
-	wrappedTitle := lipgloss.NewStyle().Width(max(1, c.model.Width()-2)).Render(titleText)
-	fmt.Fprintln(&s, titleStyle.Render(wrappedTitle))
+	fmt.Fprintln(&s, titleStyle.Render(titleText))
 
 	desc := c.itemMsg.item.Description()
 	if c.itemMsg.item.Descendants == 1 {
@@ -303,7 +304,7 @@ func (c *View) render() {
 	line := 0
 
 	// 1. Render the item info at the top (in the front)!
-	headerStr := c.renderItemHeader()
+	headerStr := c.renderItem()
 	fmt.Fprint(&s, headerStr)
 	line += strings.Count(headerStr, "\n")
 

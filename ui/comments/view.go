@@ -3,7 +3,6 @@ package comments
 import (
 	"context"
 	"fmt"
-	"html"
 	"log/slog"
 	"strings"
 
@@ -12,9 +11,6 @@ import (
 	"charm.land/bubbles/v2/viewport"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
-	"github.com/JohannesKaufmann/html-to-markdown/v2/converter"
-	"github.com/JohannesKaufmann/html-to-markdown/v2/plugin/base"
-	"github.com/JohannesKaufmann/html-to-markdown/v2/plugin/commonmark"
 	"github.com/pkg/browser"
 
 	"github.com/lakerszhy/thn/config"
@@ -28,9 +24,8 @@ type View struct {
 	theme  config.Theme
 	hotkey config.Hotkey
 
-	model     viewport.Model
-	spinner   spinner.Model
-	converter *converter.Converter
+	model   viewport.Model
+	spinner spinner.Model
 
 	msg     commentsMsg
 	itemMsg itemMsg
@@ -38,13 +33,6 @@ type View struct {
 }
 
 func NewView(itemID int64, client *hn.Client, theme config.Theme, hotkey config.Hotkey) *View {
-	converter := converter.NewConverter(
-		converter.WithPlugins(
-			base.NewBasePlugin(),
-			commonmark.NewCommonmarkPlugin(),
-		),
-	)
-
 	vp := viewport.New()
 	vp.SoftWrap = true
 
@@ -52,14 +40,13 @@ func NewView(itemID int64, client *hn.Client, theme config.Theme, hotkey config.
 	s.Spinner = spinner.Dot
 
 	return &View{
-		itemID:    itemID,
-		client:    client,
-		theme:     theme,
-		hotkey:    hotkey,
-		model:     vp,
-		converter: converter,
-		spinner:   s,
-		tree:      newTree(itemID),
+		itemID:  itemID,
+		client:  client,
+		theme:   theme,
+		hotkey:  hotkey,
+		model:   vp,
+		spinner: s,
+		tree:    newTree(itemID),
 	}
 }
 
@@ -261,28 +248,15 @@ func (c *View) renderItem() string {
 		Foreground(c.theme.Item.DescColor)
 	fmt.Fprintln(&s, descStyle.Render(desc))
 
-	// If there is text in the item (e.g. Ask HN post content), convert it and display it!
 	if c.itemMsg.item.Text != "" {
-		var content string
-		var err error
-		content, err = c.converter.ConvertString(c.itemMsg.item.Text)
-		if err != nil {
-			content = c.itemMsg.item.Text
-		}
-		content = strings.TrimSpace(content)
-		content = html.UnescapeString(content)
-
-		if content != "" {
-			fmt.Fprintln(&s)
-			textStyle := lipgloss.NewStyle().
-				PaddingLeft(2).
-				Width(max(1, c.model.Width()-4)).
-				Foreground(c.theme.Comment.ContentColor)
-			fmt.Fprintln(&s, textStyle.Render(content))
-		}
+		fmt.Fprintln(&s)
+		textStyle := lipgloss.NewStyle().
+			PaddingLeft(2).
+			Width(max(1, c.model.Width()-4)).
+			Foreground(c.theme.Comment.ContentColor)
+		fmt.Fprintln(&s, textStyle.Render(c.itemMsg.item.Text))
 	}
 
-	// Add a beautiful separator line
 	separator := lipgloss.NewStyle().
 		Foreground(c.theme.TitleBar.DivideColor).
 		Render(strings.Repeat("─", max(1, c.model.Width())))
@@ -381,13 +355,7 @@ func (c *View) renderCommentBody(comment domain.Comment, depth int) string {
 	case comment.Dead:
 		content = "[dead]"
 	default:
-		var err error
-		content, err = c.converter.ConvertString(comment.Text)
-		if err != nil {
-			content = comment.Text
-		}
-		content = strings.TrimSpace(content)
-		content = html.UnescapeString(content)
+		content = comment.Text
 	}
 
 	if content == "" {

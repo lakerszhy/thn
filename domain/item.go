@@ -33,7 +33,6 @@ func NewPagedItems(p Pagination, items []Item) PagedItems {
 type Item struct {
 	Base
 
-	Text        string
 	Poll        int64
 	KIDs        []int64
 	URL         string
@@ -90,7 +89,6 @@ func (i Item) Domain() string {
 type Comment struct {
 	Base
 
-	Text        string
 	Parent      int64
 	Descendants int64
 	KIDs        []int64
@@ -105,6 +103,7 @@ type Base struct {
 	Time    int64
 	By      string
 	Type    ItemType
+	Text    string
 	Deleted bool
 	Dead    bool
 }

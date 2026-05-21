@@ -1,6 +1,13 @@
 package hn
 
-import "github.com/lakerszhy/thn/domain"
+import (
+	"html"
+	"log/slog"
+
+	md "github.com/JohannesKaufmann/html-to-markdown/v2"
+
+	"github.com/lakerszhy/thn/domain"
+)
 
 type category string
 
@@ -63,10 +70,10 @@ func (i item) ToDomain() domain.Item {
 			Time:    i.Time,
 			By:      i.By,
 			Type:    itemType,
+			Text:    i.unescapeHTML(i.Text),
 			Deleted: i.Deleted,
 			Dead:    i.Dead,
 		},
-		Text:        i.Text,
 		Poll:        i.Poll,
 		KIDs:        i.KIDs,
 		URL:         i.URL,
@@ -83,12 +90,26 @@ func (i item) ToComment() domain.Comment {
 			ID:      i.ID,
 			Time:    i.Time,
 			By:      i.By,
+			Text:    i.unescapeHTML(i.Text),
 			Deleted: i.Deleted,
 			Dead:    i.Dead,
 		},
-		Text:        i.Text,
 		Parent:      i.Parent,
 		KIDs:        i.KIDs,
 		Descendants: i.Descendants,
 	}
+}
+
+func (i item) unescapeHTML(v string) string {
+	if v == "" {
+		return ""
+	}
+
+	output, err := md.ConvertString(v)
+	if err != nil {
+		slog.Warn("unescape html failed", "id", i.ID, "content", v, "error", err)
+		return v
+	}
+
+	return html.UnescapeString(output)
 }

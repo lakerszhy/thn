@@ -273,51 +273,62 @@ func (c *View) render() {
 	var s strings.Builder
 	line := 0
 
-	// 1. Render the item info at the top (in the front)!
 	headerStr := c.renderItem()
 	fmt.Fprint(&s, headerStr)
 	line += strings.Count(headerStr, "\n")
 
-	// 2. Render comments or loading comments state
 	if c.tree.RootCount() == 0 {
-		if !c.itemMsg.item.HasComments() {
-			c.appendLines(&s, &line, "  No comments")
-		} else {
-			switch c.msg.state {
-			case stateLoading:
-				c.appendLines(&s, &line, fmt.Sprintf("  %s Loading comments...", c.spinner.View()))
-			case stateLoadFailed:
-				c.appendLines(&s, &line, fmt.Sprintf("  Load comments failed: %s", c.msg.err.Error()))
-			case stateLoadSuccess:
-				c.appendLines(&s, &line, "  No comments")
-			}
-		}
+		c.renderCommentsState(&s, &line)
 	} else {
-		for _, visible := range c.tree.Visible() {
-			node := c.tree.Node(visible.id)
-			if node == nil {
-				continue
-			}
-
-			c.tree.SetVisibleLine(visible.id, line)
-			c.appendLines(&s, &line, c.renderCommentHeader(node, visible.depth))
-			c.appendLines(&s, &line, c.renderCommentBody(node.comment, visible.depth), "")
-
-			if node.expanded {
-				style := lipgloss.NewStyle().PaddingLeft((visible.depth + 1) * horizontalPadding)
-				if node.loading {
-					v := fmt.Sprintf("%s Loading...", c.spinner.View())
-					c.appendLines(&s, &line, style.Render(v), "")
-				}
-				if node.err != nil {
-					v := fmt.Sprintf("Load failed: %s", node.err.Error())
-					c.appendLines(&s, &line, style.Render(v), "")
-				}
-			}
-		}
+		c.renderCommentsTree(&s, &line)
 	}
 
 	c.model.SetContent(strings.TrimRight(s.String(), "\n"))
+}
+
+func (c *View) renderCommentsState(s *strings.Builder, line *int) {
+	if !c.itemMsg.item.HasComments() {
+		c.appendLines(s, line, "  No comments")
+		return
+	}
+
+	switch c.msg.state {
+	case stateLoading:
+		c.appendLines(s, line, fmt.Sprintf("  %s Loading comments...", c.spinner.View()))
+	case stateLoadFailed:
+		c.appendLines(s, line, fmt.Sprintf("  Load comments failed: %s", c.msg.err.Error()))
+	case stateLoadSuccess:
+		c.appendLines(s, line, "  No comments")
+	}
+}
+
+func (c *View) renderCommentsTree(s *strings.Builder, line *int) {
+	for _, visible := range c.tree.Visible() {
+		node := c.tree.Node(visible.id)
+		if node == nil {
+			continue
+		}
+
+		c.tree.SetVisibleLine(visible.id, *line)
+		c.appendLines(s, line, c.renderCommentHeader(node, visible.depth))
+		c.appendLines(s, line, c.renderCommentBody(node.comment, visible.depth), "")
+
+		if node.expanded {
+			c.renderSubCommentState(s, line, node, visible.depth)
+		}
+	}
+}
+
+func (c *View) renderSubCommentState(s *strings.Builder, line *int, node *node, depth int) {
+	style := lipgloss.NewStyle().PaddingLeft((depth + 1) * horizontalPadding)
+	if node.loading {
+		v := fmt.Sprintf("%s Loading...", c.spinner.View())
+		c.appendLines(s, line, style.Render(v), "")
+	}
+	if node.err != nil {
+		v := fmt.Sprintf("Load failed: %s", node.err.Error())
+		c.appendLines(s, line, style.Render(v), "")
+	}
 }
 
 func (c *View) appendLines(s *strings.Builder, line *int, lines ...string) {

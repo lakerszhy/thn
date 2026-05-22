@@ -42,6 +42,7 @@
 | `g` / `Home` | Go to first story |
 | `G` / `End` | Go to last story |
 | `Enter` / `Space` | Open comments panel for selected story |
+| `Shift + Enter` | Open comments panel for selected story in full-screen |
 | `O` | Open story URL in browser |
 | `o` | Open Hacker News story thread in browser |
 
@@ -56,7 +57,7 @@
 | `n` | Go to next sibling comment |
 | `g` / `Home` | Jump to first comment |
 | `G` / `End` | Jump to last comment |
-| `Ctrl + Enter` | Toggle full-screen reading for comments |
+| `Shift + Enter` | Toggle full-screen reading for comments |
 | `ctrl + o` | Open selected comment in browser |
 | `Esc` | Close comments panel and return focus to stories |
 

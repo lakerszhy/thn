@@ -7,14 +7,15 @@ var Hotkeys = Hotkey{
 	PrevCategory: key.NewBinding(key.WithKeys("shift+tab")),
 	NextCategory: key.NewBinding(key.WithKeys("tab")),
 
-	PrevItem:     key.NewBinding(key.WithKeys("up", "k")),
-	NextItem:     key.NewBinding(key.WithKeys("down", "j")),
-	PrevPage:     key.NewBinding(key.WithKeys("left", "h")),
-	NextPage:     key.NewBinding(key.WithKeys("right", "l")),
-	OpenComments: key.NewBinding(key.WithKeys("enter", "space")),
+	PrevItem:               key.NewBinding(key.WithKeys("up", "k")),
+	NextItem:               key.NewBinding(key.WithKeys("down", "j")),
+	PrevPage:               key.NewBinding(key.WithKeys("left", "h")),
+	NextPage:               key.NewBinding(key.WithKeys("right", "l")),
+	OpenComments:           key.NewBinding(key.WithKeys("enter", "space")),
+	OpenCommentsFullscreen: key.NewBinding(key.WithKeys("shift+enter")),
 
 	CloseComments:      key.NewBinding(key.WithKeys("esc")),
-	ToggleFullScreen:   key.NewBinding(key.WithKeys("ctrl+enter")),
+	ToggleFullscreen:   key.NewBinding(key.WithKeys("shift+enter")),
 	ToggleSubComments:  key.NewBinding(key.WithKeys("enter", "space")),
 	SelectParent:       key.NewBinding(key.WithKeys("left", "h")),
 	PrevComment:        key.NewBinding(key.WithKeys("up", "k")),
@@ -37,14 +38,15 @@ type Hotkey struct {
 	PrevCategory key.Binding
 	NextCategory key.Binding
 
-	PrevItem     key.Binding
-	NextItem     key.Binding
-	PrevPage     key.Binding
-	NextPage     key.Binding
-	OpenComments key.Binding
+	PrevItem               key.Binding
+	NextItem               key.Binding
+	PrevPage               key.Binding
+	NextPage               key.Binding
+	OpenComments           key.Binding
+	OpenCommentsFullscreen key.Binding
 
 	CloseComments      key.Binding
-	ToggleFullScreen   key.Binding
+	ToggleFullscreen   key.Binding
 	ToggleSubComments  key.Binding
 	SelectParent       key.Binding
 	PrevComment        key.Binding

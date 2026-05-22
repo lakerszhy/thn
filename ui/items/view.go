@@ -144,11 +144,20 @@ func (t *View) onKeyPressMsg(msg tea.KeyPressMsg) (*View, tea.Cmd) {
 		switch i := t.model.SelectedItem().(type) {
 		case listItem:
 			return t, func() tea.Msg {
-				return ItemSelectedMsg(i.Item)
+				return NewItemSelectedMsg(i.Item, false)
 			}
 		case loadMoreItem:
 			return t, t.fetchMore()
 		}
+	}
+
+	if key.Matches(msg, t.hotkey.OpenCommentsFullscreen) {
+		if i, ok := t.model.SelectedItem().(listItem); ok {
+			return t, func() tea.Msg {
+				return NewItemSelectedMsg(i.Item, true)
+			}
+		}
+		return t, nil
 	}
 
 	if key.Matches(msg, t.hotkey.OpenHNInBrowser) {

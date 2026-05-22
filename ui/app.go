@@ -80,7 +80,8 @@ func (a *app) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case items.ItemSelectedMsg:
 		a.focusOnItemsView = false
-		a.commentsView = comments.NewView(domain.Item(msg).ID, a.client, a.theme, a.hotkey)
+		a.commtentsFullscreen = msg.Fullscreen
+		a.commentsView = comments.NewView(msg.Item.ID, a.client, a.theme, a.hotkey)
 		a.updateSize()
 		return a, a.commentsView.Init()
 	case tea.WindowSizeMsg:
@@ -214,7 +215,7 @@ func (a *app) onKeyPressMsg(msg tea.KeyPressMsg) (*app, tea.Cmd) {
 		return a, nil
 	}
 
-	if !a.focusOnItemsView && key.Matches(msg, a.hotkey.ToggleFullScreen) {
+	if !a.focusOnItemsView && key.Matches(msg, a.hotkey.ToggleFullscreen) {
 		a.commtentsFullscreen = !a.commtentsFullscreen
 		a.updateSize()
 		return a, nil

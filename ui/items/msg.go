@@ -13,7 +13,17 @@ const (
 
 type state int
 
-type ItemSelectedMsg domain.Item
+type ItemSelectedMsg struct {
+	Item       domain.Item
+	Fullscreen bool
+}
+
+func NewItemSelectedMsg(item domain.Item, fullscreen bool) ItemSelectedMsg {
+	return ItemSelectedMsg{
+		Item:       item,
+		Fullscreen: fullscreen,
+	}
+}
 
 type itemsMsg struct {
 	category   domain.Category

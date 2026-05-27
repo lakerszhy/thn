@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"slices"
 	"strings"
 
-	"charm.land/bubbles/v2/key"
 	"charm.land/bubbles/v2/spinner"
 	"charm.land/bubbles/v2/viewport"
 	tea "charm.land/bubbletea/v2"
@@ -83,7 +83,7 @@ func (c *View) Update(msg tea.Msg) (*View, tea.Cmd) {
 	case commentsMsg:
 		return c.onCommentsMsg(msg)
 	case tea.KeyPressMsg:
-		c, cmd = c.onKeyPressMsg(msg)
+		c, cmd = c.onKeyPressMsg(msg.String())
 		return c, cmd
 	}
 
@@ -397,7 +397,7 @@ func (c *View) ensureSelectedVisible() {
 	}
 }
 
-func (c *View) onKeyPressMsg(msg tea.KeyPressMsg) (*View, tea.Cmd) {
+func (c *View) onKeyPressMsg(key string) (*View, tea.Cmd) {
 	if c.itemMsg.state != stateLoadSuccess {
 		return c, nil
 	}
@@ -406,44 +406,44 @@ func (c *View) onKeyPressMsg(msg tea.KeyPressMsg) (*View, tea.Cmd) {
 	reRender := true
 
 	switch {
-	case key.Matches(msg, c.hotkey.ToggleSubComments):
+	case slices.Contains(c.hotkey.ToggleSubComments, key):
 		comment := c.tree.ToggleSelected()
 		if comment != nil {
 			cmd = c.fetchSubComments(*comment)
 		}
 
-	case key.Matches(msg, c.hotkey.SelectParent):
+	case slices.Contains(c.hotkey.SelectParent, key):
 		c.tree.SelectParent()
 
-	case key.Matches(msg, c.hotkey.PrevComment):
+	case slices.Contains(c.hotkey.PrevComment, key):
 		c.tree.SelectVisible(-1)
 
-	case key.Matches(msg, c.hotkey.NextComment):
+	case slices.Contains(c.hotkey.NextComment, key):
 		c.tree.SelectVisible(1)
 
-	case key.Matches(msg, c.hotkey.PrevSiblingComment):
+	case slices.Contains(c.hotkey.PrevSiblingComment, key):
 		c.tree.SelectSibling(-1)
 
-	case key.Matches(msg, c.hotkey.NextSiblingComment):
+	case slices.Contains(c.hotkey.NextSiblingComment, key):
 		c.tree.SelectSibling(1)
 
-	case key.Matches(msg, c.hotkey.GoToStart):
+	case slices.Contains(c.hotkey.GoToStart, key):
 		c.tree.SelectFirst()
 
-	case key.Matches(msg, c.hotkey.GoToEnd):
+	case slices.Contains(c.hotkey.GoToEnd, key):
 		c.tree.SelectLast()
 
-	case key.Matches(msg, c.hotkey.OpenHNInBrowser):
+	case slices.Contains(c.hotkey.OpenHNInBrowser, key):
 		reRender = false
 		c.openURL(c.itemMsg.item.URLInHN())
 
-	case key.Matches(msg, c.hotkey.OpenDomainInBrowser):
+	case slices.Contains(c.hotkey.OpenDomainInBrowser, key):
 		reRender = false
 		if c.itemMsg.item.URL != "" {
 			c.openURL(c.itemMsg.item.URL)
 		}
 
-	case key.Matches(msg, c.hotkey.OpenCommentInBrowser):
+	case slices.Contains(c.hotkey.OpenCommentInBrowser, key):
 		reRender = false
 		node := c.tree.Node(c.tree.SelectedID())
 		if node != nil {

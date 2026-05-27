@@ -3,7 +3,6 @@ package ui
 import (
 	"slices"
 
-	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 
@@ -203,11 +202,13 @@ func (a *app) renderTitleBar() string {
 }
 
 func (a *app) onKeyPressMsg(msg tea.KeyPressMsg) (*app, tea.Cmd) {
-	if key.Matches(msg, a.hotkey.Quit) {
+	key := msg.String()
+
+	if slices.Contains(a.hotkey.Quit, key) {
 		return a, tea.Quit
 	}
 
-	if key.Matches(msg, a.hotkey.CloseComments) {
+	if slices.Contains(a.hotkey.CloseComments, key) {
 		a.focusOnItemsView = true
 		a.commentsView = nil
 		a.commtentsFullscreen = false
@@ -215,7 +216,7 @@ func (a *app) onKeyPressMsg(msg tea.KeyPressMsg) (*app, tea.Cmd) {
 		return a, nil
 	}
 
-	if !a.focusOnItemsView && key.Matches(msg, a.hotkey.ToggleFullscreen) {
+	if !a.focusOnItemsView && slices.Contains(a.hotkey.ToggleFullscreen, key) {
 		a.commtentsFullscreen = !a.commtentsFullscreen
 		a.updateSize()
 		return a, nil
@@ -228,13 +229,13 @@ func (a *app) onKeyPressMsg(msg tea.KeyPressMsg) (*app, tea.Cmd) {
 		return a, cmd
 	}
 
-	if key.Matches(msg, a.hotkey.NextCategory) {
+	if slices.Contains(a.hotkey.NextCategory, key) {
 		index := slices.Index(a.categories, a.current)
 		index = min(index+1, len(a.categories)-1)
 		return a, a.updateCurrentCategory(index)
 	}
 
-	if key.Matches(msg, a.hotkey.PrevCategory) {
+	if slices.Contains(a.hotkey.PrevCategory, key) {
 		index := slices.Index(a.categories, a.current)
 		index = max(index-1, 0)
 		return a, a.updateCurrentCategory(index)

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"slices"
 
 	"charm.land/bubbles/v2/key"
 	"charm.land/bubbles/v2/list"
@@ -37,12 +38,12 @@ func NewView(category domain.Category, client *hn.Client, theme config.Theme, ho
 	model.SetShowHelp(false)
 	model.DisableQuitKeybindings()
 	model.KeyMap = list.KeyMap{
-		CursorUp:   hotkey.PrevItem,
-		CursorDown: hotkey.NextItem,
-		PrevPage:   hotkey.PrevPage,
-		NextPage:   hotkey.NextPage,
-		GoToStart:  hotkey.GoToStart,
-		GoToEnd:    hotkey.GoToEnd,
+		CursorUp:   key.NewBinding(key.WithKeys(hotkey.PrevItem...)),
+		CursorDown: key.NewBinding(key.WithKeys(hotkey.NextItem...)),
+		PrevPage:   key.NewBinding(key.WithKeys(hotkey.PrevPage...)),
+		NextPage:   key.NewBinding(key.WithKeys(hotkey.NextPage...)),
+		GoToStart:  key.NewBinding(key.WithKeys(hotkey.GoToStart...)),
+		GoToEnd:    key.NewBinding(key.WithKeys(hotkey.GoToEnd...)),
 	}
 
 	s := spinner.New()
@@ -140,7 +141,9 @@ func (t *View) onItemsLoaded(pagedItems domain.PagedItems) {
 }
 
 func (t *View) onKeyPressMsg(msg tea.KeyPressMsg) (*View, tea.Cmd) {
-	if key.Matches(msg, t.hotkey.OpenComments) {
+	key := msg.String()
+
+	if slices.Contains(t.hotkey.OpenComments, key) {
 		switch i := t.model.SelectedItem().(type) {
 		case listItem:
 			return t, func() tea.Msg {
@@ -151,7 +154,7 @@ func (t *View) onKeyPressMsg(msg tea.KeyPressMsg) (*View, tea.Cmd) {
 		}
 	}
 
-	if key.Matches(msg, t.hotkey.OpenCommentsFullscreen) {
+	if slices.Contains(t.hotkey.OpenCommentsFullscreen, key) {
 		if i, ok := t.model.SelectedItem().(listItem); ok {
 			return t, func() tea.Msg {
 				return NewItemSelectedMsg(i.Item, true)
@@ -160,7 +163,7 @@ func (t *View) onKeyPressMsg(msg tea.KeyPressMsg) (*View, tea.Cmd) {
 		return t, nil
 	}
 
-	if key.Matches(msg, t.hotkey.OpenHNInBrowser) {
+	if slices.Contains(t.hotkey.OpenHNInBrowser, key) {
 		var item listItem
 		var ok bool
 
@@ -175,7 +178,7 @@ func (t *View) onKeyPressMsg(msg tea.KeyPressMsg) (*View, tea.Cmd) {
 		return t, nil
 	}
 
-	if key.Matches(msg, t.hotkey.OpenDomainInBrowser) {
+	if slices.Contains(t.hotkey.OpenDomainInBrowser, key) {
 		var item listItem
 		var ok bool
 
@@ -194,7 +197,7 @@ func (t *View) onKeyPressMsg(msg tea.KeyPressMsg) (*View, tea.Cmd) {
 		return t, nil
 	}
 
-	if key.Matches(msg, t.hotkey.Refresh) && t.msg.state != stateLoading {
+	if slices.Contains(t.hotkey.Refresh, key) && t.msg.state != stateLoading {
 		return t, tea.Batch(t.spinner.Tick, t.fetch())
 	}
 

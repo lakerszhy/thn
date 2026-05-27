@@ -11,6 +11,7 @@ require (
 	github.com/adrg/xdg v0.5.3
 	github.com/charmbracelet/x/ansi v0.11.7
 	github.com/dustin/go-humanize v1.0.1
+	github.com/pelletier/go-toml/v2 v2.3.1
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c
 	golang.org/x/sync v0.20.0
 	google.golang.org/api v0.278.0

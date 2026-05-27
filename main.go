@@ -29,12 +29,17 @@ func run() error {
 
 	slog.Info("THN starting up....")
 
+	hotkeys, err := config.LoadHotkeys()
+	if err != nil {
+		return err
+	}
+
 	client, err := hn.New(context.Background())
 	if err != nil {
 		return err
 	}
 
-	app := ui.NewApp(client, config.HackerNewsTheme, config.Hotkeys)
+	app := ui.NewApp(client, config.HackerNewsTheme, hotkeys)
 	if _, err = tea.NewProgram(app).Run(); err != nil {
 		return err
 	}

@@ -1,66 +1,52 @@
 package config
 
-import "charm.land/bubbles/v2/key"
+import (
+	_ "embed"
 
-//nolint:gochecknoglobals // default hotkey set
-var Hotkeys = Hotkey{
-	PrevCategory: key.NewBinding(key.WithKeys("shift+tab")),
-	NextCategory: key.NewBinding(key.WithKeys("tab")),
+	"github.com/pelletier/go-toml/v2"
+)
 
-	PrevItem:               key.NewBinding(key.WithKeys("up", "k")),
-	NextItem:               key.NewBinding(key.WithKeys("down", "j")),
-	PrevPage:               key.NewBinding(key.WithKeys("left", "h")),
-	NextPage:               key.NewBinding(key.WithKeys("right", "l")),
-	OpenComments:           key.NewBinding(key.WithKeys("enter", "space")),
-	OpenCommentsFullscreen: key.NewBinding(key.WithKeys("shift+enter")),
-
-	CloseComments:      key.NewBinding(key.WithKeys("esc")),
-	ToggleFullscreen:   key.NewBinding(key.WithKeys("shift+enter")),
-	ToggleSubComments:  key.NewBinding(key.WithKeys("enter", "space")),
-	SelectParent:       key.NewBinding(key.WithKeys("left", "h")),
-	PrevComment:        key.NewBinding(key.WithKeys("up", "k")),
-	NextComment:        key.NewBinding(key.WithKeys("down", "j")),
-	PrevSiblingComment: key.NewBinding(key.WithKeys("p")),
-	NextSiblingComment: key.NewBinding(key.WithKeys("n")),
-
-	Refresh: key.NewBinding(key.WithKeys("r")),
-
-	OpenHNInBrowser:      key.NewBinding(key.WithKeys("o")),
-	OpenCommentInBrowser: key.NewBinding(key.WithKeys("ctrl+o")),
-	OpenDomainInBrowser:  key.NewBinding(key.WithKeys("O")),
-
-	GoToStart: key.NewBinding(key.WithKeys("home", "g")),
-	GoToEnd:   key.NewBinding(key.WithKeys("end", "G")),
-	Quit:      key.NewBinding(key.WithKeys("ctrl+c", "q")),
-}
+//go:embed templates/hotkeys.toml
+var hotkeyTemplate []byte
 
 type Hotkey struct {
-	PrevCategory key.Binding
-	NextCategory key.Binding
+	PrevCategory []string `toml:"prev_category"`
+	NextCategory []string `toml:"next_category"`
 
-	PrevItem               key.Binding
-	NextItem               key.Binding
-	PrevPage               key.Binding
-	NextPage               key.Binding
-	OpenComments           key.Binding
-	OpenCommentsFullscreen key.Binding
+	PrevItem               []string `toml:"prev_item"`
+	NextItem               []string `toml:"next_item"`
+	PrevPage               []string `toml:"prev_page"`
+	NextPage               []string `toml:"next_page"`
+	OpenComments           []string `toml:"open_comments"`
+	OpenCommentsFullscreen []string `toml:"open_comments_fullscreen"`
 
-	CloseComments      key.Binding
-	ToggleFullscreen   key.Binding
-	ToggleSubComments  key.Binding
-	SelectParent       key.Binding
-	PrevComment        key.Binding
-	NextComment        key.Binding
-	PrevSiblingComment key.Binding
-	NextSiblingComment key.Binding
+	CloseComments      []string `toml:"close_comments"`
+	ToggleFullscreen   []string `toml:"toggle_fullscreen"`
+	ToggleSubComments  []string `toml:"toggle_sub_comments"`
+	SelectParent       []string `toml:"select_parent"`
+	PrevComment        []string `toml:"prev_comment"`
+	NextComment        []string `toml:"next_comment"`
+	PrevSiblingComment []string `toml:"prev_sibling_comment"`
+	NextSiblingComment []string `toml:"next_sibling_comment"`
 
-	Refresh key.Binding
+	Refresh []string `toml:"refresh"`
 
-	OpenHNInBrowser      key.Binding
-	OpenCommentInBrowser key.Binding
-	OpenDomainInBrowser  key.Binding
+	OpenHNInBrowser      []string `toml:"open_hn_in_browser"`
+	OpenCommentInBrowser []string `toml:"open_comment_in_browser"`
+	OpenDomainInBrowser  []string `toml:"open_domain_in_browser"`
 
-	GoToStart key.Binding
-	GoToEnd   key.Binding
-	Quit      key.Binding
+	GoToStart []string `toml:"go_to_start"`
+	GoToEnd   []string `toml:"go_to_end"`
+	Quit      []string `toml:"quit"`
+}
+
+func LoadHotkeys() (Hotkey, error) {
+	var hotkey Hotkey
+
+	err := toml.Unmarshal(hotkeyTemplate, &hotkey)
+	if err != nil {
+		return hotkey, err
+	}
+
+	return hotkey, nil
 }
